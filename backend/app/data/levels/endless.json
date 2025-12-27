@@ -1,0 +1,183 @@
+{
+  "metadata": {
+    "id": "endless",
+    "version": "0.1.0",
+    "hash": ""
+  },
+  "grid": {
+    "width": 16,
+    "height": 16,
+    "cellSize": 32,
+    "entry": { "x": 0, "y": 8 },
+    "exit": { "x": 15, "y": 8 },
+    "blocked": [
+      { "x": 6, "y": 7 },
+      { "x": 6, "y": 8 },
+      { "x": 6, "y": 9 }
+    ],
+    "noBuild": [
+      { "x": 0, "y": 8 },
+      { "x": 15, "y": 8 }
+    ],
+    "presetTowers": [
+      { "type": "CANNON", "cell": { "x": 3, "y": 7 }, "level": 1 },
+      { "type": "LMG", "cell": { "x": 3, "y": 9 }, "level": 1 }
+    ],
+    "initialGold": 70,
+    "initialLife": 20
+  },
+  "towers": {
+    "CANNON": {
+      "name": "Cannon",
+      "type": "CANNON",
+      "baseDamage": 22,
+      "fireRate": 1.1,
+      "range": 3.5,
+      "costByLevel": [12, 18, 28, 44, 68],
+      "splashRadius": 0.6
+    },
+    "LMG": {
+      "name": "LMG",
+      "type": "LMG",
+      "baseDamage": 10,
+      "fireRate": 3.2,
+      "range": 4.5,
+      "costByLevel": [10, 16, 24, 36, 52]
+    },
+    "HMG": {
+      "name": "HMG",
+      "type": "HMG",
+      "baseDamage": 40,
+      "fireRate": 0.85,
+      "range": 2.8,
+      "costByLevel": [16, 24, 36, 52, 72],
+      "splashRadius": 0.4
+    },
+    "LASER": {
+      "name": "Laser",
+      "type": "LASER",
+      "baseDamage": 55,
+      "fireRate": 0.65,
+      "range": 4.2,
+      "costByLevel": [20, 32, 48, 70, 96],
+      "pierce": 2
+    },
+    "WALL": {
+      "name": "Wall",
+      "type": "WALL",
+      "baseDamage": 0,
+      "fireRate": 0,
+      "range": 0,
+      "costByLevel": [6, 9, 12, 16, 22]
+    }
+  },
+  "enemies": {
+    "NORMAL": {
+      "name": "Normal",
+      "type": "NORMAL",
+      "baseHp": 35,
+      "baseArmor": 2,
+      "baseSpeed": 1.2,
+      "baseDamage": 1,
+      "reward": 2,
+      "color": "#5bb0ff"
+    },
+    "FAST": {
+      "name": "Fast",
+      "type": "FAST",
+      "baseHp": 24,
+      "baseArmor": 1,
+      "baseSpeed": 2.1,
+      "baseDamage": 1,
+      "reward": 2,
+      "color": "#8de26d"
+    },
+    "TANK": {
+      "name": "Tank",
+      "type": "TANK",
+      "baseHp": 90,
+      "baseArmor": 6,
+      "baseSpeed": 0.9,
+      "baseDamage": 2,
+      "reward": 4,
+      "color": "#d6a05f"
+    },
+    "SHIELD": {
+      "name": "Shield",
+      "type": "SHIELD",
+      "baseHp": 55,
+      "baseArmor": 10,
+      "baseSpeed": 1,
+      "baseDamage": 1,
+      "reward": 3,
+      "color": "#7a6bff"
+    },
+    "BRUISER": {
+      "name": "Bruiser",
+      "type": "BRUISER",
+      "baseHp": 110,
+      "baseArmor": 8,
+      "baseSpeed": 1.1,
+      "baseDamage": 3,
+      "reward": 6,
+      "color": "#ff7b6f"
+    },
+    "BOSS": {
+      "name": "Boss",
+      "type": "BOSS",
+      "baseHp": 400,
+      "baseArmor": 12,
+      "baseSpeed": 0.85,
+      "baseDamage": 5,
+      "reward": 30,
+      "color": "#ff3b30"
+    }
+  },
+  "waves": {
+    "fixed": [
+      { "enemies": [{ "type": "NORMAL", "count": 8 }] },
+      { "enemies": [{ "type": "NORMAL", "count": 10 }, { "type": "FAST", "count": 6 }] },
+      {
+        "enemies": [
+          { "type": "NORMAL", "count": 10 },
+          { "type": "FAST", "count": 10 },
+          { "type": "TANK", "count": 3 }
+        ]
+      },
+      { "enemies": [{ "type": "SHIELD", "count": 6 }, { "type": "FAST", "count": 12 }] },
+      {
+        "enemies": [
+          { "type": "BRUISER", "count": 4 },
+          { "type": "TANK", "count": 6 },
+          { "type": "FAST", "count": 8 }
+        ]
+      },
+      { "enemies": [{ "type": "BOSS", "count": 1 }] }
+    ],
+    "generator": {
+      "maxPerWave": 40,
+      "typeWeights": {
+        "NORMAL": 2,
+        "FAST": 1.6,
+        "TANK": 1.1,
+        "SHIELD": 1,
+        "BRUISER": 0.9,
+        "BOSS": 0.1
+      },
+      "difficultyGrowth": 0.12
+    }
+  },
+  "difficulty": {
+    "base": 1,
+    "minMultiplier": 0.6,
+    "maxMultiplier": 3,
+    "gainBonus": 0.08,
+    "lossPenalty": 0.18
+  },
+  "economy": {
+    "sellRefundRate": 0.5,
+    "waveRewardBase": 6,
+    "waveRewardGrowth": 1.15,
+    "killRewardMultiplier": 1
+  }
+}

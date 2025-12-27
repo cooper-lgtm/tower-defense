@@ -1,0 +1,31 @@
+[project]
+name = "tower-defense-backend"
+version = "0.1.0"
+description = "FastAPI backend for the tower defense MVP"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.5",
+  "uvicorn[standard]>=0.32.0",
+  "pydantic>=2.9.0",
+  "pydantic-settings>=2.6.1",
+  "python-jose>=3.3.0",
+  "passlib[bcrypt]>=1.7.4",
+  "sqlalchemy>=2.0.36",
+  "psycopg2-binary>=2.9.9",
+  "redis>=5.1.1",
+  "rq>=1.16.2",
+  "orjson>=3.10.10",
+  "python-dotenv>=1.0.1",
+  "httpx>=0.27.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.4",
+  "ruff>=0.7.4",
+  "black>=24.10.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
