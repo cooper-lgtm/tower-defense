@@ -29,13 +29,20 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
-export async function login(name: string): Promise<{ token: string }> {
+export async function login(name: string, password?: string): Promise<{ token: string }> {
   const data = await apiFetch<{ access_token: string }>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, password }),
   })
   setToken(data.access_token)
   return { token: data.access_token }
+}
+
+export async function register(name: string, password: string) {
+  return apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, password }),
+  })
 }
 
 export async function fetchLevel(id = 'endless'): Promise<LevelConfig> {

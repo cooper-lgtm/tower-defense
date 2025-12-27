@@ -1,5 +1,4 @@
 from datetime import timedelta
-from secrets import token_hex
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,6 +15,8 @@ from ..schemas import (
   LeaderboardResponse,
   LevelResponse,
   LoginRequest,
+  RegisterRequest,
+  UserOut,
   ScoreOut,
   ScoreSubmit,
   Token,
@@ -46,11 +47,18 @@ def create_user(db: Session, name: str, password: str) -> User:
 
 
 def authenticate_user(db: Session, name: str, password: Optional[str]) -> User:
-  """如果用户不存在则创建游客；有密码则校验。"""
+  """用户存在则校验密码；guest 允许无密码用于体验。"""
+  if name == "guest":
+    # 游客不入库，用于试玩，不参与榜单
+    guest = User(id=0, name="guest", hash_pwd="", created_at=None)  # type: ignore[arg-type]
+    return guest
+
   user = get_user(db, name)
   if not user:
-    return create_user(db, name, password or name)
-  if password and not verify_password(password, user.hash_pwd):
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+  if not password:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password required")
+  if not verify_password(password, user.hash_pwd):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
   return user
 
@@ -67,6 +75,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     sub = payload.get("sub")
     if sub is None:
       raise credentials_exception
+    if sub == "guest":
+      return User(id=0, name="guest", hash_pwd="", created_at=None)  # type: ignore[arg-type]
     user_id = int(sub)
   except (JWTError, ValueError):
     raise credentials_exception
@@ -78,12 +88,26 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/auth/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
-  """游客/注册登录，返回 JWT。"""
-  name = payload.name or f"guest-{token_hex(3)}"
+  """登录，返回 JWT。游客不计入榜单。"""
+  name = payload.name or "guest"
   user = authenticate_user(db, name, payload.password)
   access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-  token = create_access_token({"sub": str(user.id)}, expires_delta=access_token_expires)
+  token_sub = "guest" if user.name == "guest" else str(user.id)
+  token = create_access_token({"sub": token_sub}, expires_delta=access_token_expires)
   return Token(access_token=token, expires_in=int(access_token_expires.total_seconds()))
+
+
+@router.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserOut:
+  """注册新用户：名称唯一，需密码。"""
+  if payload.name == "guest":
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
+  if get_user(db, payload.name):
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+  if not payload.password:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password required")
+  user = create_user(db, payload.name, payload.password)
+  return UserOut.model_validate(user)
 
 
 @router.get("/levels/{level_id}", response_model=LevelResponse)
@@ -113,6 +137,8 @@ def submit_score(
   leaderboard: Leaderboard = Depends(get_leaderboard),
 ) -> ScoreOut:
   """提交成绩：校验版本/hash，存库并更新榜单。"""
+  if user.name == "guest":
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest scores are not ranked")
   level = load_level(payload.level_id)
   if payload.level_hash != level["hash"]:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Level hash mismatch")

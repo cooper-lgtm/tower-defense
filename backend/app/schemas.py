@@ -13,10 +13,17 @@ class Token(BaseModel):
 
 
 class LoginRequest(BaseModel):
-  """登录/注册请求；游客可缺省密码。"""
+  """登录请求；游客可缺省密码，其余必须提供。"""
 
   name: str = Field(default="guest")
   password: Optional[str] = None
+
+
+class RegisterRequest(BaseModel):
+  """注册请求；需要唯一昵称和密码。"""
+
+  name: str
+  password: str
 
 
 class UserOut(BaseModel):
