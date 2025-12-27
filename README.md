@@ -9,8 +9,12 @@ This repo contains a canvas-based TypeScript client (`frontend/`) and a FastAPI 
 
 ## Backend
 - Stack: FastAPI + Postgres (SQLAlchemy) + Redis ZSET leaderboard + JWT auth.
-- Run: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e . -i https://pypi.org/simple && venv/bin/python -m uvicorn app.main:app --reload`.
-- Endpoints: `/api/auth/login`, `/api/levels/{id}`, `/api/leaderboard`, `/api/score`, and `ws://.../ws/leaderboard`.
+- Dev infra: `cd backend && docker-compose up -d` (Postgres:5432, Redis:6379).
+- Install: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e . -i https://pypi.org/simple`.
+- Bootstrap DB+tables: `cd backend && source .venv/bin/activate && python scripts/bootstrap_db.py`（如有权限会先建库，再跑 `alembic upgrade head`）。
+- 如果库已存在且只需迁移：`cd backend && alembic upgrade head`（使用 `alembic.ini` 中 DB URL）。
+- Run API: `cd backend && source .venv/bin/activate && venv/bin/python -m uvicorn app.main:app --reload`.
+- Endpoints: `/api/auth/register`, `/api/auth/login`, `/api/levels/{id}`, `/api/leaderboard`, `/api/score`, and `ws://.../ws/leaderboard`.
 - Level configs live in `backend/app/data/levels/`; hashing uses deterministic FNV-1a to align with the client.
 
 Next steps
