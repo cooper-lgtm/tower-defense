@@ -38,6 +38,7 @@ export class Game {
   private waveResult: WaveResult | null = null
   private basePath: Cell[]
   private waveLivesLost = 0
+  private buildSelection: TowerType = DEFAULT_BUILD_TOWER
 
   constructor(canvas: HTMLCanvasElement, config: LevelConfig) {
     this.canvas = canvas
@@ -63,6 +64,10 @@ export class Game {
     this.loop()
   }
 
+  setBuildType(type: TowerType): void {
+    this.buildSelection = type
+  }
+
   private setupInput(): void {
     // 鼠标/触摸移动：更新预览格子是否可建
     this.input.onMove((cell) => {
@@ -71,7 +76,7 @@ export class Game {
     })
     // 点击：尝试建默认塔，否则维持状态
     this.input.onClick((cell) => {
-      if (this.tryBuildTower(cell, DEFAULT_BUILD_TOWER)) return
+      if (this.tryBuildTower(cell, this.buildSelection)) return
       this.state.set(this.state.state === 'paused' ? 'running' : this.state.state)
     })
     // 快捷键：空格暂停/继续，N 跳过当前波（需无敌人）
@@ -113,6 +118,10 @@ export class Game {
   }
 
   private tryBuildTower(cell: Cell, type: TowerType): boolean {
+    if (this.enemies.some((e) => e.occupiesCell(cell))) {
+      this.flashStatus('该格子有敌人，暂不可建造')
+      return false
+    }
     if (!this.canBuild(cell)) {
       this.flashStatus('不可建造：路径被阻断或格子不可用')
       return false
@@ -124,10 +133,32 @@ export class Game {
       this.flashStatus('金币不足')
       return false
     }
+
+    // 校验建造后敌人是否仍有路径，并为存活敌人重新寻路
+    const blocked = this.map.blockedWithOccupancy([cell])
+    for (const enemy of this.enemies) {
+      const pos = enemy.position()
+      const start = this.map.cellFromWorld(pos.x, pos.y)
+      const path = findPath(this.map, start, this.map.exit, blocked)
+      if (!path) {
+        this.flashStatus('建造会堵死当前敌人路径')
+        return false
+      }
+    }
+
     this.gold -= cost
     this.map.occupy(cell)
     this.towers.push(new Tower(def, cell, 1, this.map))
     this.recomputeBasePath()
+
+    // 重新为敌人指路
+    for (const enemy of this.enemies) {
+      const pos = enemy.position()
+      const start = this.map.cellFromWorld(pos.x, pos.y)
+      const path = findPath(this.map, start, this.map.exit, this.map.blockedWithOccupancy())
+      if (path) enemy.retargetPath(path)
+    }
+
     this.flashStatus(`建造 ${def.name} (-${cost})`)
     return true
   }

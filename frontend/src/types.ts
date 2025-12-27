@@ -121,3 +121,13 @@ export interface EnemyInstance {
   alive: boolean
   escaped: boolean
 }
+
+export interface LeaderboardEntry {
+  user_id: number
+  name: string
+  score: number
+  wave: number
+  time_ms: number
+  life_left: number
+  created_at: string
+}

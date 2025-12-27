@@ -75,9 +75,9 @@ export class CanvasRenderer {
 
   private drawGrid(): void {
     const { ctx, map } = this
-    ctx.fillStyle = '#0f172a'
+    ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, map.width * map.cellSize, map.height * map.cellSize)
-    ctx.strokeStyle = '#1f2937'
+    ctx.strokeStyle = '#e2e8f0'
     ctx.lineWidth = 1
 
     for (let y = 0; y < map.height; y += 1) {
@@ -87,10 +87,10 @@ export class CanvasRenderer {
         ctx.strokeRect(px, py, map.cellSize, map.cellSize)
         const cell = { x, y }
         if (map.isBlocked(cell)) {
-          ctx.fillStyle = '#111827'
+          ctx.fillStyle = '#f1f5f9'
           ctx.fillRect(px, py, map.cellSize, map.cellSize)
         } else if (map.isNoBuild(cell)) {
-          ctx.fillStyle = 'rgba(255,255,255,0.06)'
+          ctx.fillStyle = 'rgba(100,116,139,0.12)'
           ctx.fillRect(px, py, map.cellSize, map.cellSize)
         }
       }
@@ -111,8 +111,8 @@ export class CanvasRenderer {
     const { ctx, map } = this
     for (const tower of towers) {
       const pos = map.worldFromCell(tower.data.cell)
-      ctx.fillStyle = '#38bdf8'
-      if (tower.data.type === 'WALL') ctx.fillStyle = '#9ca3af'
+      ctx.fillStyle = '#0ea5e9'
+      if (tower.data.type === 'WALL') ctx.fillStyle = '#94a3b8'
       ctx.beginPath()
       ctx.rect(
         pos.x - map.cellSize * 0.35,
@@ -134,14 +134,14 @@ export class CanvasRenderer {
       ctx.fill()
       // HP bar
       const hpRatio = Math.max(0, enemy.data.hp) / Math.max(1, enemy.data.maxHp)
-      ctx.fillStyle = '#111827'
+      ctx.fillStyle = '#e2e8f0'
       ctx.fillRect(
         pos.x - map.cellSize * 0.25,
         pos.y - map.cellSize * 0.35,
         map.cellSize * 0.5,
         4
       )
-      ctx.fillStyle = '#34d399'
+      ctx.fillStyle = '#22c55e'
       ctx.fillRect(
         pos.x - map.cellSize * 0.25,
         pos.y - map.cellSize * 0.35,
@@ -153,10 +153,10 @@ export class CanvasRenderer {
 
   private drawHud(state: RenderState): void {
     const { ctx, map } = this
-    ctx.fillStyle = 'rgba(15,23,42,0.8)'
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
     ctx.fillRect(0, 0, map.width * map.cellSize, 28)
-    ctx.fillStyle = '#e5e7eb'
-    ctx.font = '14px "JetBrains Mono", "SFMono-Regular", monospace'
+    ctx.fillStyle = '#0f172a'
+    ctx.font = '14px "Inter", "SFMono-Regular", monospace'
     ctx.textBaseline = 'middle'
     ctx.fillText(`Wave ${state.wave}`, 12, 14)
     ctx.fillText(`Gold: ${Math.floor(state.gold)}`, 90, 14)

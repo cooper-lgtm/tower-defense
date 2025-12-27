@@ -94,4 +94,16 @@ export class Enemy {
   progressToExit(): number {
     return this.pathIndex + this.data.progress
   }
+
+  occupiesCell(cell: Cell): boolean {
+    const currentCell = this.map.cellFromWorld(this.position().x, this.position().y)
+    return currentCell.x === cell.x && currentCell.y === cell.y
+  }
+
+  retargetPath(path: Cell[]): void {
+    this.data.path = path
+    this.worldPath = path.map((cell) => this.map.worldFromCell(cell))
+    this.pathIndex = 0
+    this.data.progress = 0
+  }
 }
