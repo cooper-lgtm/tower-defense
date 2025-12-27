@@ -9,7 +9,7 @@ This repo contains a canvas-based TypeScript client (`frontend/`) and a FastAPI 
 
 ## Backend
 - Stack: FastAPI + Postgres (SQLAlchemy) + Redis ZSET leaderboard + JWT auth.
-- Run: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e . -i https://pypi.org/simple && uvicorn app.main:app --reload`.
+- Run: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e . -i https://pypi.org/simple && venv/bin/python -m uvicorn app.main:app --reload`.
 - Endpoints: `/api/auth/login`, `/api/levels/{id}`, `/api/leaderboard`, `/api/score`, and `ws://.../ws/leaderboard`.
 - Level configs live in `backend/app/data/levels/`; hashing uses deterministic FNV-1a to align with the client.
 
