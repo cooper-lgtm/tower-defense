@@ -76,6 +76,11 @@ body {
   color: #0f172a;
 }
 
+.panel button.ghost {
+  background: #f8fafc;
+  color: #e11d48;
+  border: 1px solid #f1f5f9;
+}
 .tower-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -112,4 +117,71 @@ body {
   padding: 6px 4px;
   border-bottom: 1px solid #f1f5f9;
   font-size: 13px;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.auth-panel {
+  width: 320px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+  padding: 16px;
+}
+
+.auth-panel h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.auth-panel label {
+  display: block;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.auth-panel input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.auth-buttons .ghost {
+  flex: 1;
+  background: #f8fafc;
+  color: #e11d48;
+  border: 1px solid #f1f5f9;
+}
+
+.auth-status {
+  font-size: 12px;
+  color: #475569;
+}
+
+.center-start {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  pointer-events: auto;
 }

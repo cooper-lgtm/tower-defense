@@ -2,10 +2,7 @@ import type { LeaderboardEntry, TowerType } from '../types'
 
 interface OverlayOptions {
   onSelectTower: (type: TowerType) => void
-  onLogin: (name: string, password: string) => Promise<void>
-  onRegister: (name: string, password: string) => Promise<void>
   onRefreshLeaderboard: () => Promise<void>
-  onStartGame: () => void
 }
 
 const towerNames: { type: TowerType; label: string; desc: string }[] = [
@@ -22,6 +19,7 @@ export class OverlayUI {
   private loginStatus!: HTMLDivElement
   private towerButtons: Map<TowerType, HTMLButtonElement> = new Map()
   private opts: OverlayOptions
+  private userDisplay!: HTMLDivElement
 
   constructor(opts: OverlayOptions) {
     this.opts = opts
@@ -47,74 +45,16 @@ export class OverlayUI {
     title.textContent = '登录 / 注册'
     panel.appendChild(title)
 
-    const nameLabel = document.createElement('label')
-    nameLabel.textContent = '昵称'
-    panel.appendChild(nameLabel)
-
-    const inputName = document.createElement('input')
-    inputName.placeholder = '玩家昵称，游客填 guest'
-    panel.appendChild(inputName)
-
-    const pwdLabel = document.createElement('label')
-    pwdLabel.textContent = '密码'
-    panel.appendChild(pwdLabel)
-
-    const inputPwd = document.createElement('input')
-    inputPwd.placeholder = '游客可留空'
-    inputPwd.type = 'password'
-    panel.appendChild(inputPwd)
-
-    const row = document.createElement('div')
-    row.style.display = 'flex'
-    row.style.gap = '8px'
-
-    const btnLogin = document.createElement('button')
-    btnLogin.textContent = '登录'
-    btnLogin.onclick = async () => {
-      btnLogin.disabled = true
-      btnLogin.textContent = '登录中...'
-      try {
-        await this.opts.onLogin(inputName.value || 'guest', inputPwd.value || '')
-        this.loginStatus.textContent = `已登录：${inputName.value || 'guest'}`
-      } catch (err) {
-        this.loginStatus.textContent = `登录失败：${(err as Error).message}`
-      } finally {
-        btnLogin.disabled = false
-        btnLogin.textContent = '登录'
-      }
-    }
-    row.appendChild(btnLogin)
-
-    const btnRegister = document.createElement('button')
-    btnRegister.className = 'secondary'
-    btnRegister.textContent = '注册'
-    btnRegister.onclick = async () => {
-      btnRegister.disabled = true
-      btnRegister.textContent = '注册中...'
-      try {
-        await this.opts.onRegister(inputName.value, inputPwd.value)
-        this.loginStatus.textContent = '注册成功，请登录'
-      } catch (err) {
-        this.loginStatus.textContent = `注册失败：${(err as Error).message}`
-      } finally {
-        btnRegister.disabled = false
-        btnRegister.textContent = '注册'
-      }
-    }
-    row.appendChild(btnRegister)
-
-    panel.appendChild(row)
-
-    const startBtn = document.createElement('button')
-    startBtn.style.marginTop = '8px'
-    startBtn.textContent = '开始游戏'
-    startBtn.onclick = () => this.opts.onStartGame()
-    panel.appendChild(startBtn)
+    this.userDisplay = document.createElement('div')
+    this.userDisplay.style.fontSize = '14px'
+    this.userDisplay.style.color = '#0f172a'
+    this.userDisplay.textContent = '用户：未登录'
+    panel.appendChild(this.userDisplay)
 
     this.loginStatus = document.createElement('div')
     this.loginStatus.style.fontSize = '12px'
     this.loginStatus.style.color = '#475569'
-    this.loginStatus.textContent = '未登录（游客不计入排行榜）'
+    this.loginStatus.textContent = '游客不计入排行榜'
     panel.appendChild(this.loginStatus)
 
     return panel
@@ -188,5 +128,10 @@ export class OverlayUI {
       li.innerHTML = `<span>#${idx + 1} ${e.name}</span><span>${e.score}</span>`
       this.leaderboardList.appendChild(li)
     })
+  }
+
+  setUser(name: string, isGuest: boolean) {
+    this.userDisplay.textContent = `用户：${name}`
+    this.loginStatus.textContent = isGuest ? '游客不计入排行榜' : ''
   }
 }

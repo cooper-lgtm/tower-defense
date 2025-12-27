@@ -2,7 +2,8 @@ import './style.css'
 import { Game } from './core/game'
 import { createDefaultLevel } from './config/defaultLevel'
 import { OverlayUI } from './ui/overlay'
-import { fetchLeaderboard, fetchLevel, loadToken, login, register } from './api/client'
+import { AuthModal } from './ui/authModal'
+import { fetchLeaderboard, fetchLevel, loadToken } from './api/client'
 import type { LevelConfig, TowerType } from './types'
 
 const app = document.querySelector<HTMLDivElement>('#app')
@@ -43,15 +44,6 @@ async function bootstrap() {
 
   const overlay = new OverlayUI({
     onSelectTower: (type: TowerType) => game?.setBuildType(type),
-    onLogin: async (name: string, password: string) => {
-      await login(name, password)
-      if (name === 'guest') {
-        console.warn('游客模式：成绩不计入排行榜')
-      }
-    },
-    onRegister: async (name: string, password: string) => {
-      await register(name, password)
-    },
     onRefreshLeaderboard: async () => {
       try {
         const entries = await fetchLeaderboard('endless')
@@ -60,13 +52,9 @@ async function bootstrap() {
         console.error(err)
       }
     },
-    onStartGame: () => {
-      startGame().catch((err) => console.error(err))
-    },
   })
   overlay.mount(uiContainer)
 
-  loadToken()
   overlay.setLeaderboard([])
   try {
     const entries = await fetchLeaderboard('endless')
@@ -74,6 +62,28 @@ async function bootstrap() {
   } catch (err) {
     console.error('Leaderboard fetch failed', err)
   }
+  // Auth modal
+  const auth = new AuthModal({
+    onAuthenticated: (info) => {
+      overlay.setUser(info.name, info.isGuest)
+      startButton.style.display = 'block'
+    },
+  })
+  auth.mount(document.body)
+
+  // Load existing token if any (best-effort)
+  loadToken()
+
+  // Center start button overlay
+  const startButton = document.createElement('button')
+  startButton.className = 'panel center-start'
+  startButton.style.display = 'none'
+  startButton.textContent = '开始游戏'
+  startButton.onclick = () => {
+    startButton.style.display = 'none'
+    startGame().catch((err) => console.error(err))
+  }
+  document.body.appendChild(startButton)
 }
 
 bootstrap().catch((err) => console.error(err))

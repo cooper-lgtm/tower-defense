@@ -6,7 +6,8 @@ from passlib.context import CryptContext
 
 from ..core.config import get_settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# 使用 pbkdf2_sha256 避免 bcrypt 兼容性问题
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 settings = get_settings()
 
 
