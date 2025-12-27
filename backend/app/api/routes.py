@@ -19,7 +19,7 @@ from ..schemas import (
   ScoreOut,
   ScoreSubmit,
   Token,
-) 
+)
 from ..services.levels import load_level
 from ..services.leaderboard import Leaderboard
 from ..utils.security import create_access_token, get_password_hash, verify_password
@@ -46,6 +46,7 @@ def create_user(db: Session, name: str, password: str) -> User:
 
 
 def authenticate_user(db: Session, name: str, password: Optional[str]) -> User:
+  """如果用户不存在则创建游客；有密码则校验。"""
   user = get_user(db, name)
   if not user:
     return create_user(db, name, password or name)
@@ -55,6 +56,7 @@ def authenticate_user(db: Session, name: str, password: Optional[str]) -> User:
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+  """解析 JWT，获取当前用户。"""
   credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Could not validate credentials",
@@ -76,6 +78,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/auth/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
+  """游客/注册登录，返回 JWT。"""
   name = payload.name or f"guest-{token_hex(3)}"
   user = authenticate_user(db, name, payload.password)
   access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
@@ -85,6 +88,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
 
 @router.get("/levels/{level_id}", response_model=LevelResponse)
 def get_level(level_id: str) -> LevelResponse:
+  """获取关卡配置（附带版本/hash）。"""
   level = load_level(level_id)
   return LevelResponse(id=level["id"], version=level["version"], hash=level["hash"], config=level["config"])
 
@@ -96,6 +100,7 @@ def read_leaderboard(
   limit: int = Query(10, ge=1, le=100),
   leaderboard: Leaderboard = Depends(get_leaderboard),
 ) -> LeaderboardResponse:
+  """读取榜单，支持 scope/limit。"""
   entries = leaderboard.top(level, scope=scope, limit=limit)
   return LeaderboardResponse(level=level, scope=scope, entries=entries)
 
@@ -107,6 +112,7 @@ def submit_score(
   user: User = Depends(get_current_user),
   leaderboard: Leaderboard = Depends(get_leaderboard),
 ) -> ScoreOut:
+  """提交成绩：校验版本/hash，存库并更新榜单。"""
   level = load_level(payload.level_id)
   if payload.level_hash != level["hash"]:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Level hash mismatch")

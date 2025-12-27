@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+  """集中配置，支持环境变量覆盖（前缀 TD_）。"""
   app_name: str = "Tower Defense"
   api_prefix: str = "/api"
   secret_key: str = "dev-secret"

@@ -1,3 +1,4 @@
+// 本地默认关卡配置，含塔/怪/波次/经济参数，计算并填充配置哈希
 import { hashLevelConfig } from '../utils/hash'
 import type {
   DifficultyTuning,

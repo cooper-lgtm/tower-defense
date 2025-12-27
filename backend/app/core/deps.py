@@ -8,6 +8,7 @@ from .config import get_settings
 
 
 def get_redis() -> Generator[redis.Redis, None, None]:
+  """Redis 连接依赖。"""
   client = redis.from_url(get_settings().redis_url, decode_responses=True)
   try:
     yield client
@@ -16,6 +17,7 @@ def get_redis() -> Generator[redis.Redis, None, None]:
 
 
 def get_leaderboard(client: Optional[redis.Redis] = None) -> Leaderboard:
+  """若 Redis 不可用则回退内存榜单，避免开发期崩溃。"""
   try:
     redis_client = client or redis.from_url(get_settings().redis_url, decode_responses=True)
   except Exception:

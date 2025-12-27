@@ -1,3 +1,4 @@
+// 敌人实体：按难度实例化属性，沿路径移动，处理受击/逃脱
 import type { Cell, EnemyDefinition, EnemyInstance } from '../types'
 import { GridMap } from '../map/grid'
 

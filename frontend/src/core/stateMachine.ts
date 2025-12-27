@@ -1,3 +1,4 @@
+// 极简状态机：管理 menu/building/running/paused/gameover
 import type { GameState } from '../types'
 
 export class StateMachine {

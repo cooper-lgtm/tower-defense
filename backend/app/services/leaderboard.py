@@ -11,7 +11,7 @@ settings = get_settings()
 
 class Leaderboard:
   """
-  Thin Redis ZSET wrapper with in-memory fallback for local dev.
+  榜单服务：Redis ZSET 封装，Redis 不可用时使用内存回退。
   """
 
   def __init__(self, client: Optional[redis.Redis] = None):
@@ -30,6 +30,7 @@ class Leaderboard:
       self.client.publish(f"{key}:events", json.dumps({"type": "update"}))
       return
 
+    # 内存模式：排序并截断
     self.fallback.setdefault(key, [])
     bucket = self.fallback[key]
     bucket.append(entry)

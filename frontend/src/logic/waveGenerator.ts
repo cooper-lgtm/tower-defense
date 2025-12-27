@@ -1,3 +1,4 @@
+// 波次生成：固定表之后按权重与波次指数增长自动生成；基于上一波损失动态调整难度倍率
 import type {
   DifficultyTuning,
   EnemyType,

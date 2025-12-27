@@ -11,6 +11,7 @@ from .services.leaderboard import Leaderboard
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.1.0")
 
+# 全局 CORS：前后端联调方便
 app.add_middleware(
   CORSMiddleware,
   allow_origins=["*"],
@@ -29,6 +30,7 @@ async def leaderboard_socket(
   scope: str = "all",
   leaderboard: Leaderboard = Depends(get_leaderboard),
 ):
+  """每隔 2s 推送当前榜单快照；后续可换成事件驱动。"""
   await websocket.accept()
   try:
     while True:

@@ -1,3 +1,4 @@
+// 防御塔实体：简单最近进度优先选怪，按等级倍率造成伤害
 import type { Cell, TowerDefinition, TowerInstance } from '../types'
 import { Enemy } from './enemy'
 import { GridMap } from '../map/grid'

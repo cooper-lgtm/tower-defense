@@ -7,6 +7,7 @@ from ..utils.hash import hash_level_config
 
 
 def load_level(level_id: str) -> Dict[str, Any]:
+  """读取关卡 JSON，计算并回填 hash。"""
   settings = get_settings()
   level_path = Path(settings.level_dir) / f"{level_id}.json"
   if not level_path.exists():

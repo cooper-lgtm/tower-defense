@@ -7,6 +7,8 @@ from .core.db import Base
 
 
 class User(Base):
+  """用户表：存储昵称与密码哈希。"""
+
   __tablename__ = "users"
 
   id = Column(Integer, primary_key=True, index=True)
@@ -18,6 +20,8 @@ class User(Base):
 
 
 class Level(Base):
+  """关卡表：保存配置 JSON 及版本/hash。"""
+
   __tablename__ = "levels"
 
   id = Column(String, primary_key=True, index=True)
@@ -30,6 +34,8 @@ class Level(Base):
 
 
 class Score(Base):
+  """成绩表：记录用户成绩并用于榜单。"""
+
   __tablename__ = "scores"
 
   id = Column(Integer, primary_key=True, index=True)

@@ -1,3 +1,4 @@
+// 输入抽象：统一鼠标/触摸到网格坐标，分发点击与移动回调
 import type { Cell } from '../types'
 import { GridMap } from '../map/grid'
 
@@ -27,6 +28,7 @@ export class InputController {
   }
 
   private attach(): void {
+    // 将屏幕坐标换算到 canvas 逻辑坐标后转成格子
     const handlePointer = (clientX: number, clientY: number, isClick: boolean) => {
       const rect = this.canvas.getBoundingClientRect()
       const x = (clientX - rect.left) * this.dpr
