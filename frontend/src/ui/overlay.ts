@@ -1,17 +1,20 @@
-import type { LeaderboardEntry, TowerType } from '../types'
+import type { LeaderboardEntry, TowerDefinition, TowerType } from '../types'
 
 interface OverlayOptions {
+  towerDefs: Record<TowerType, TowerDefinition>
   onSelectTower: (type: TowerType) => void
   onRefreshLeaderboard: () => Promise<void>
 }
 
-const towerNames: { type: TowerType; label: string; desc: string }[] = [
-  { type: 'CANNON', label: '加农', desc: '中程溅射' },
-  { type: 'LMG', label: '轻机枪', desc: '远程速射' },
-  { type: 'HMG', label: '重机枪', desc: '近中高伤' },
-  { type: 'LASER', label: '激光', desc: '中远瞬时' },
-  { type: 'WALL', label: '路障', desc: '阻挡' },
-]
+const towerMeta: Record<TowerType, { label: string; desc: string; iconClass: string }> = {
+  CANNON: { label: '加农', desc: '中程溅射', iconClass: 'tower-icon--cannon' },
+  LMG: { label: '轻机枪', desc: '远程速射', iconClass: 'tower-icon--lmg' },
+  HMG: { label: '重机枪', desc: '近中高伤', iconClass: 'tower-icon--hmg' },
+  LASER: { label: '激光', desc: '中远瞬时', iconClass: 'tower-icon--laser' },
+  WALL: { label: '路障', desc: '阻挡', iconClass: 'tower-icon--wall' },
+}
+
+const towerOrder: TowerType[] = ['CANNON', 'LMG', 'HMG', 'LASER', 'WALL']
 
 export class OverlayUI {
   private root: HTMLDivElement
@@ -20,9 +23,11 @@ export class OverlayUI {
   private towerButtons: Map<TowerType, HTMLButtonElement> = new Map()
   private opts: OverlayOptions
   private userDisplay!: HTMLDivElement
+  private towerDefs: Record<TowerType, TowerDefinition>
 
   constructor(opts: OverlayOptions) {
     this.opts = opts
+    this.towerDefs = opts.towerDefs
     this.root = document.createElement('div')
     this.root.style.display = 'flex'
     this.root.style.flexDirection = 'column'
@@ -71,12 +76,27 @@ export class OverlayUI {
 
     const grid = document.createElement('div')
     grid.className = 'tower-buttons'
-    towerNames.forEach((info, idx) => {
+    towerOrder.forEach((type, idx) => {
+      const meta = towerMeta[type]
+      const def = this.towerDefs[type]
+      const cost = def?.costByLevel?.[0]
+      const priceText = cost != null ? `${cost} 金币` : '—'
       const btn = document.createElement('button')
-      btn.innerHTML = `<strong>${info.label}</strong><span style="font-size:12px;color:#475569">${info.desc}</span>`
-      btn.onclick = () => this.selectTower(info.type)
+      btn.innerHTML = `
+        <div class="tower-row">
+          <div class="tower-icon ${meta.iconClass}">${meta.label.slice(0, 1)}</div>
+          <div class="tower-text">
+            <div class="tower-title-row">
+              <strong>${meta.label}</strong>
+              <span class="tower-price">${priceText}</span>
+            </div>
+            <span class="tower-desc">${meta.desc}</span>
+          </div>
+        </div>
+      `
+      btn.onclick = () => this.selectTower(type)
       if (idx === 0) btn.classList.add('active')
-      this.towerButtons.set(info.type, btn)
+      this.towerButtons.set(type, btn)
       grid.appendChild(btn)
     })
     panel.appendChild(grid)

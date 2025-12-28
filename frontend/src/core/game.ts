@@ -26,6 +26,7 @@ export class Game {
   private enemies: Enemy[] = []
   private gold: number
   private life: number
+  private score = 0
   private waveIndex = 0
   private currentDifficulty: number
   private wavePlan: GeneratedWave | null = null
@@ -46,7 +47,7 @@ export class Game {
     this.map = new GridMap(config.grid)
     this.renderer = new CanvasRenderer(canvas, this.map)
     this.input = new InputController(canvas, this.map, window.devicePixelRatio || 1)
-    this.gold = config.grid.initialGold
+    this.gold = Math.round(config.grid.initialGold)
     this.life = config.grid.initialLife
     this.currentDifficulty = config.difficulty.base
     const path = this.computePath([])
@@ -226,7 +227,9 @@ export class Game {
   private finishWave(livesLost: number): void {
     // 结算波次：记录损失、发放金币奖励，推进波次序号
     this.waveResult = { livesLost }
-    const reward = this.config.economy.waveRewardBase + this.waveIndex * this.config.economy.waveRewardGrowth
+    const reward = Math.round(
+      this.config.economy.waveRewardBase + this.waveIndex * this.config.economy.waveRewardGrowth
+    )
     this.gold += reward
     this.waveIndex += 1
     this.waveLivesLost = 0
@@ -263,12 +266,16 @@ export class Game {
     for (const tower of this.towers) {
       const result = tower.update(dt, this.enemies)
       killed += result.killed
+      if (result.scoreGain > 0) {
+        this.score += result.scoreGain
+      }
     }
 
     const survivors: Enemy[] = []
     for (const enemy of this.enemies) {
       if (!enemy.data.alive) {
-        this.gold += enemy.data.reward * this.config.economy.killRewardMultiplier
+        const reward = Math.round(enemy.data.reward * this.config.economy.killRewardMultiplier)
+        if (reward > 0) this.gold += reward
       } else {
         survivors.push(enemy)
       }
@@ -286,6 +293,7 @@ export class Game {
       towers: this.towers,
       enemies: this.enemies,
       gold: this.gold,
+      score: this.score,
       life: this.life,
       wave: this.waveIndex + 1,
       state: this.state.state,

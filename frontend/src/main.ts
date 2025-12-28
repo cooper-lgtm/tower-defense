@@ -53,6 +53,7 @@ async function bootstrap() {
   levelConfig = await loadLevel()
 
   const overlay = new OverlayUI({
+    towerDefs: levelConfig.towers,
     onSelectTower: (type: TowerType) => game?.setBuildType(type),
     onRefreshLeaderboard: async () => {
       try {

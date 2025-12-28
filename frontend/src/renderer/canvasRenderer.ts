@@ -8,6 +8,7 @@ export interface RenderState {
   towers: Tower[]
   enemies: Enemy[]
   gold: number
+  score: number
   life: number
   wave: number
   state: GameState
@@ -158,9 +159,17 @@ export class CanvasRenderer {
     ctx.fillStyle = '#0f172a'
     ctx.font = '14px "Inter", "SFMono-Regular", monospace'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`Wave ${state.wave}`, 12, 14)
-    ctx.fillText(`Gold: ${Math.floor(state.gold)}`, 90, 14)
-    ctx.fillText(`Life: ${state.life}`, 180, 14)
-    ctx.fillText(`State: ${state.state}`, 250, 14)
+    const labels = [
+      `Wave ${state.wave}`,
+      `Score: ${Math.floor(state.score)}`,
+      `Gold: ${Math.round(state.gold)}`,
+      `Life: ${state.life}`,
+      `State: ${state.state}`,
+    ]
+    let x = 12
+    for (const text of labels) {
+      ctx.fillText(text, x, 14)
+      x += ctx.measureText(text).width + 18
+    }
   }
 }

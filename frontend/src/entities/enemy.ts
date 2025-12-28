@@ -81,14 +81,15 @@ export class Enemy {
     }
   }
 
-  applyDamage(amount: number): boolean {
+  applyDamage(amount: number): { killed: boolean; dealt: number } {
     const effective = Math.max(0, amount - this.data.armor)
-    this.data.hp -= effective
+    const dealt = Math.min(effective, this.data.hp)
+    this.data.hp -= dealt
     if (this.data.hp <= 0) {
       this.data.alive = false
-      return true
+      return { killed: true, dealt }
     }
-    return false
+    return { killed: false, dealt }
   }
 
   progressToExit(): number {

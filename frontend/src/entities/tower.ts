@@ -24,12 +24,12 @@ export class Tower {
     }
   }
 
-  update(dt: number, enemies: Enemy[]): { killed: number; damage: number } {
-    if (this.def.type === 'WALL') return { killed: 0, damage: 0 }
+  update(dt: number, enemies: Enemy[]): { killed: number; damage: number; scoreGain: number } {
+    if (this.def.type === 'WALL') return { killed: 0, damage: 0, scoreGain: 0 }
 
     this.data.cooldown = Math.max(0, this.data.cooldown - dt)
 
-    if (this.data.cooldown > 0) return { killed: 0, damage: 0 }
+    if (this.data.cooldown > 0) return { killed: 0, damage: 0, scoreGain: 0 }
 
     const rangePx = this.def.range * this.map.cellSize
     const origin = this.map.worldFromCell(this.data.cell)
@@ -50,11 +50,12 @@ export class Tower {
       }
     }
 
-    if (!target) return { killed: 0, damage: 0 }
+    if (!target) return { killed: 0, damage: 0, scoreGain: 0 }
 
     const damage = this.def.baseDamage * levelMultiplier(this.data.level)
-    const killed = target.applyDamage(damage) ? 1 : 0
+    const { killed, dealt } = target.applyDamage(damage)
+    const scoreGain = dealt > 0 ? Math.floor(Math.sqrt(dealt)) : 0
     this.data.cooldown = 1 / this.def.fireRate
-    return { killed, damage }
+    return { killed: killed ? 1 : 0, damage: dealt, scoreGain }
   }
 }
