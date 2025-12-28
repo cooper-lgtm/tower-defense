@@ -11,6 +11,10 @@ export class InputController {
   private canvas: HTMLCanvasElement
   private grid: GridMap
   private dpr: number
+  private clickListener!: (ev: MouseEvent) => void
+  private moveListener!: (ev: MouseEvent) => void
+  private touchEndListener!: (ev: TouchEvent) => void
+  private touchMoveListener!: (ev: TouchEvent) => void
 
   constructor(canvas: HTMLCanvasElement, grid: GridMap, dpr: number) {
     this.canvas = canvas
@@ -41,31 +45,28 @@ export class InputController {
       }
     }
 
-    this.canvas.addEventListener('click', (ev) => {
-      handlePointer(ev.clientX, ev.clientY, true)
-    })
+    this.clickListener = (ev) => handlePointer(ev.clientX, ev.clientY, true)
+    this.moveListener = (ev) => handlePointer(ev.clientX, ev.clientY, false)
+    this.touchEndListener = (ev) => {
+      const touch = ev.changedTouches[0]
+      handlePointer(touch.clientX, touch.clientY, true)
+      ev.preventDefault()
+    }
+    this.touchMoveListener = (ev) => {
+      const touch = ev.changedTouches[0]
+      handlePointer(touch.clientX, touch.clientY, false)
+    }
 
-    this.canvas.addEventListener('mousemove', (ev) => {
-      handlePointer(ev.clientX, ev.clientY, false)
-    })
+    this.canvas.addEventListener('click', this.clickListener)
+    this.canvas.addEventListener('mousemove', this.moveListener)
+    this.canvas.addEventListener('touchend', this.touchEndListener, { passive: false })
+    this.canvas.addEventListener('touchmove', this.touchMoveListener, { passive: false })
+  }
 
-    this.canvas.addEventListener(
-      'touchend',
-      (ev) => {
-        const touch = ev.changedTouches[0]
-        handlePointer(touch.clientX, touch.clientY, true)
-        ev.preventDefault()
-      },
-      { passive: false }
-    )
-
-    this.canvas.addEventListener(
-      'touchmove',
-      (ev) => {
-        const touch = ev.changedTouches[0]
-        handlePointer(touch.clientX, touch.clientY, false)
-      },
-      { passive: false }
-    )
+  dispose(): void {
+    this.canvas.removeEventListener('click', this.clickListener)
+    this.canvas.removeEventListener('mousemove', this.moveListener)
+    this.canvas.removeEventListener('touchend', this.touchEndListener)
+    this.canvas.removeEventListener('touchmove', this.touchMoveListener)
   }
 }

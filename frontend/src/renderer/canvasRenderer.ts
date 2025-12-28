@@ -56,7 +56,6 @@ export class CanvasRenderer {
     this.drawPreview(state.preview)
     this.drawTowers(state.towers)
     this.drawEnemies(state.enemies)
-    this.drawHud(state)
 
     // Entry/exit markers on top
     ctx.fillStyle = '#6bc46d'
@@ -70,6 +69,10 @@ export class CanvasRenderer {
     ctx.beginPath()
     ctx.arc(exit.x, exit.y, map.cellSize * 0.3, 0, Math.PI * 2)
     ctx.fill()
+
+    if (state.state === 'gameover') {
+      this.drawGameOver()
+    }
 
     ctx.restore()
   }
@@ -152,24 +155,18 @@ export class CanvasRenderer {
     }
   }
 
-  private drawHud(state: RenderState): void {
+  private drawGameOver(): void {
     const { ctx, map } = this
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'
-    ctx.fillRect(0, 0, map.width * map.cellSize, 28)
-    ctx.fillStyle = '#0f172a'
-    ctx.font = '14px "Inter", "SFMono-Regular", monospace'
+    const centerX = (map.width * map.cellSize) / 2
+    const centerY = (map.height * map.cellSize) / 2
+    ctx.save()
+    ctx.fillStyle = 'rgba(15,23,42,0.25)'
+    ctx.fillRect(0, 0, map.width * map.cellSize, map.height * map.cellSize)
+    ctx.fillStyle = '#ef4444'
+    ctx.font = 'bold 64px "Inter", "SFMono-Regular", monospace'
+    ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    const labels = [
-      `Wave ${state.wave}`,
-      `Score: ${Math.floor(state.score)}`,
-      `Gold: ${Math.round(state.gold)}`,
-      `Life: ${state.life}`,
-      `State: ${state.state}`,
-    ]
-    let x = 12
-    for (const text of labels) {
-      ctx.fillText(text, x, 14)
-      x += ctx.measureText(text).width + 18
-    }
+    ctx.fillText('GAME OVER', centerX, centerY)
+    ctx.restore()
   }
 }

@@ -9,11 +9,17 @@ import { Tower } from '../entities/tower'
 import { findPath } from '../pathfinding/aStar'
 import type { GeneratedWave, WaveResult } from '../logic/waveGenerator'
 import { generateWave } from '../logic/waveGenerator'
-import type { LevelConfig, Cell, TowerType, EnemyType } from '../types'
+import type { LevelConfig, Cell, TowerType, EnemyType, GameState } from '../types'
 
 const DEFAULT_BUILD_TOWER: TowerType = 'CANNON'
 // 刷怪间隔（秒）
 const SPAWN_INTERVAL = 0.6
+
+interface GameHooks {
+  onStats?: (stats: { wave: number; score: number; gold: number; life: number; state: GameState }) => void
+  onGameOver?: (summary: { score: number; wave: number; timeMs: number; lifeLeft: number }) => void
+  onStateChange?: (state: GameState) => void
+}
 
 export class Game {
   private canvas: HTMLCanvasElement
@@ -40,10 +46,17 @@ export class Game {
   private basePath: Cell[]
   private waveLivesLost = 0
   private buildSelection: TowerType = DEFAULT_BUILD_TOWER
+  private hooks?: GameHooks
+  private startTime = 0
+  private gameOverReported = false
+  private frameId = 0
+  private disposed = false
+  private keyHandler!: (ev: KeyboardEvent) => void
 
-  constructor(canvas: HTMLCanvasElement, config: LevelConfig) {
+  constructor(canvas: HTMLCanvasElement, config: LevelConfig, hooks?: GameHooks) {
     this.canvas = canvas
     this.config = config
+    this.hooks = hooks
     this.map = new GridMap(config.grid)
     this.renderer = new CanvasRenderer(canvas, this.map)
     this.input = new InputController(canvas, this.map, window.devicePixelRatio || 1)
@@ -60,7 +73,11 @@ export class Game {
   }
 
   start(): void {
-    this.state.set('running')
+    this.disposed = false
+    this.startTime = performance.now()
+    this.lastFrame = this.startTime
+    this.gameOverReported = false
+    this.setState('running')
     this.prepareWave()
     this.loop()
   }
@@ -78,10 +95,10 @@ export class Game {
     // 点击：尝试建默认塔，否则维持状态
     this.input.onClick((cell) => {
       if (this.tryBuildTower(cell, this.buildSelection)) return
-      this.state.set(this.state.state === 'paused' ? 'running' : this.state.state)
+      this.setState(this.state.state === 'paused' ? 'running' : this.state.state)
     })
     // 快捷键：空格暂停/继续，N 跳过当前波（需无敌人）
-    window.addEventListener('keydown', (ev) => {
+    this.keyHandler = (ev: KeyboardEvent) => {
       if (ev.code === 'Space') {
         ev.preventDefault()
         this.togglePause()
@@ -90,14 +107,15 @@ export class Game {
         ev.preventDefault()
         this.skipToNextWave()
       }
-    })
+    }
+    window.addEventListener('keydown', this.keyHandler)
   }
 
-  private togglePause(): void {
+  togglePause(): void {
     if (this.state.is('paused')) {
-      this.state.set('running')
+      this.setState('running')
     } else if (this.state.is('running')) {
-      this.state.set('paused')
+      this.setState('paused')
     }
   }
 
@@ -210,7 +228,7 @@ export class Game {
     if (!enemyDef) return
     if (!this.basePath) {
       this.flashStatus('路径被堵死，无法刷新怪物')
-      this.state.set('paused')
+      this.setState('paused')
       return
     }
     const enemy = new Enemy(enemyDef, this.basePath, this.currentDifficulty, this.map)
@@ -259,7 +277,7 @@ export class Game {
     }
 
     if (this.life <= 0) {
-      this.state.set('gameover')
+      this.setState('gameover')
     }
 
     let killed = 0
@@ -286,6 +304,10 @@ export class Game {
       this.finishWave(this.waveLivesLost)
       this.prepareWave()
     }
+
+    if (this.state.is('gameover')) {
+      this.handleGameOver()
+    }
   }
 
   private render(): void {
@@ -300,6 +322,7 @@ export class Game {
       preview: this.preview,
     }
     this.renderer.render(state)
+    this.hooks?.onStats?.(this.getStats())
     if (this.statusTimer > 0) {
       const ctx = this.canvas.getContext('2d')
       if (ctx) {
@@ -315,6 +338,7 @@ export class Game {
   }
 
   private loop = () => {
+    if (this.disposed) return
     const now = performance.now()
     const delta = (now - this.lastFrame) / 1000
     this.lastFrame = now
@@ -326,6 +350,53 @@ export class Game {
     }
     this.update(accumulator)
     this.render()
-    requestAnimationFrame(this.loop)
+    this.frameId = requestAnimationFrame(this.loop)
+  }
+
+  getStats(): { wave: number; score: number; gold: number; life: number; state: GameState } {
+    return {
+      wave: this.waveIndex + 1,
+      score: this.score,
+      gold: Math.round(this.gold),
+      life: this.life,
+      state: this.state.state,
+    }
+  }
+
+  pause(): void {
+    if (this.state.is('running')) this.setState('paused')
+  }
+
+  resume(): void {
+    if (this.state.is('paused')) this.setState('running')
+  }
+
+  restart(): void {
+    this.dispose()
+  }
+
+  dispose(): void {
+    this.disposed = true
+    if (this.frameId) cancelAnimationFrame(this.frameId)
+    window.removeEventListener('keydown', this.keyHandler)
+    this.input.dispose()
+  }
+
+  private setState(next: GameState): void {
+    if (this.state.state === next) return
+    this.state.set(next)
+    this.hooks?.onStateChange?.(next)
+  }
+
+  private handleGameOver(): void {
+    if (this.gameOverReported) return
+    this.gameOverReported = true
+    const summary = {
+      score: Math.floor(this.score),
+      wave: this.waveIndex + 1,
+      timeMs: Math.round(performance.now() - this.startTime),
+      lifeLeft: this.life,
+    }
+    this.hooks?.onGameOver?.(summary)
   }
 }

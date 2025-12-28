@@ -54,3 +54,28 @@ export async function fetchLeaderboard(level = 'endless'): Promise<LeaderboardEn
   const payload = await apiFetch<{ entries: LeaderboardEntry[] }>(`/leaderboard?level=${level}`)
   return payload.entries
 }
+
+export interface ScoreSubmitPayload {
+  score: number
+  wave: number
+  time_ms: number
+  life_left: number
+  level_id: string
+  level_version: string
+  level_hash: string
+}
+
+export async function submitScore(payload: ScoreSubmitPayload) {
+  return apiFetch('/score', {
+    method: 'POST',
+    body: JSON.stringify({
+      score: payload.score,
+      wave: payload.wave,
+      time_ms: payload.time_ms,
+      life_left: payload.life_left,
+      level_id: payload.level_id,
+      level_version: payload.level_version,
+      level_hash: payload.level_hash,
+    }),
+  })
+}

@@ -4,14 +4,16 @@ interface OverlayOptions {
   towerDefs: Record<TowerType, TowerDefinition>
   onSelectTower: (type: TowerType) => void
   onRefreshLeaderboard: () => Promise<void>
+  onTogglePause: () => void
+  onRestart: () => void
 }
 
-const towerMeta: Record<TowerType, { label: string; desc: string; iconClass: string }> = {
-  CANNON: { label: '加农', desc: '中程溅射', iconClass: 'tower-icon--cannon' },
-  LMG: { label: '轻机枪', desc: '远程速射', iconClass: 'tower-icon--lmg' },
-  HMG: { label: '重机枪', desc: '近中高伤', iconClass: 'tower-icon--hmg' },
-  LASER: { label: '激光', desc: '中远瞬时', iconClass: 'tower-icon--laser' },
-  WALL: { label: '路障', desc: '阻挡', iconClass: 'tower-icon--wall' },
+const towerMeta: Record<TowerType, { label: string; desc: string }> = {
+  CANNON: { label: '加农炮', desc: '中程溅射' },
+  LMG: { label: '轻机枪', desc: '远程速射' },
+  HMG: { label: '重机枪', desc: '近中高伤' },
+  LASER: { label: '激光炮', desc: '中远瞬时' },
+  WALL: { label: '路障', desc: '阻挡' },
 }
 
 const towerOrder: TowerType[] = ['CANNON', 'LMG', 'HMG', 'LASER', 'WALL']
@@ -24,6 +26,13 @@ export class OverlayUI {
   private opts: OverlayOptions
   private userDisplay!: HTMLDivElement
   private towerDefs: Record<TowerType, TowerDefinition>
+  private lifeValue!: HTMLSpanElement
+  private stateValue!: HTMLSpanElement
+  private scoreValue!: HTMLSpanElement
+  private goldValue!: HTMLSpanElement
+  private waveValue!: HTMLSpanElement
+  private pauseButton!: HTMLButtonElement
+  private restartButton!: HTMLButtonElement
 
   constructor(opts: OverlayOptions) {
     this.opts = opts
@@ -34,6 +43,8 @@ export class OverlayUI {
     this.root.style.gap = '12px'
 
     this.root.appendChild(this.buildLoginPanel())
+    this.root.appendChild(this.buildStatsPanel())
+    this.root.appendChild(this.buildControlsPanel())
     this.root.appendChild(this.buildTowerPanel())
   }
 
@@ -84,7 +95,6 @@ export class OverlayUI {
       const btn = document.createElement('button')
       btn.innerHTML = `
         <div class="tower-row">
-          <div class="tower-icon ${meta.iconClass}">${meta.label.slice(0, 1)}</div>
           <div class="tower-text">
             <div class="tower-title-row">
               <strong>${meta.label}</strong>
@@ -100,6 +110,77 @@ export class OverlayUI {
       grid.appendChild(btn)
     })
     panel.appendChild(grid)
+    return panel
+  }
+
+  private buildStatsPanel(): HTMLElement {
+    const panel = document.createElement('div')
+    panel.className = 'panel'
+    const title = document.createElement('h3')
+    title.textContent = '战局信息'
+    panel.appendChild(title)
+
+    const grid = document.createElement('div')
+    grid.className = 'stats-grid'
+
+    const buildItem = (label: string, valueEl: HTMLSpanElement, spanFull = false) => {
+      const item = document.createElement('div')
+      item.className = 'stat-item'
+      if (spanFull) item.classList.add('span-2')
+      const name = document.createElement('span')
+      name.className = 'stat-label'
+      name.textContent = label
+      item.appendChild(name)
+      valueEl.className = 'stat-value'
+      item.appendChild(valueEl)
+      grid.appendChild(item)
+    }
+
+    this.lifeValue = document.createElement('span')
+    this.stateValue = document.createElement('span')
+    this.scoreValue = document.createElement('span')
+    this.goldValue = document.createElement('span')
+    this.waveValue = document.createElement('span')
+
+    buildItem('生命', this.lifeValue)
+    buildItem('状态', this.stateValue)
+    buildItem('成绩', this.scoreValue)
+    buildItem('金币', this.goldValue)
+
+    const waveItem = document.createElement('div')
+    waveItem.className = 'stat-item span-2'
+    const waveLabel = document.createElement('span')
+    waveLabel.className = 'stat-label'
+    waveLabel.textContent = '怪物'
+    const waveValue = document.createElement('span')
+    waveValue.className = 'stat-value'
+    waveValue.appendChild(this.waveValue)
+    waveItem.appendChild(waveLabel)
+    waveItem.appendChild(waveValue)
+    grid.appendChild(waveItem)
+
+    panel.appendChild(grid)
+    return panel
+  }
+
+  private buildControlsPanel(): HTMLElement {
+    const panel = document.createElement('div')
+    panel.className = 'panel'
+    const row = document.createElement('div')
+    row.className = 'control-row'
+
+    this.pauseButton = document.createElement('button')
+    this.pauseButton.textContent = '暂停'
+    this.pauseButton.onclick = () => this.opts.onTogglePause()
+    row.appendChild(this.pauseButton)
+
+    this.restartButton = document.createElement('button')
+    this.restartButton.className = 'secondary'
+    this.restartButton.textContent = '重新开始'
+    this.restartButton.onclick = () => this.opts.onRestart()
+    row.appendChild(this.restartButton)
+
+    panel.appendChild(row)
     return panel
   }
 
@@ -155,5 +236,21 @@ export class OverlayUI {
   setUser(name: string, isGuest: boolean) {
     this.userDisplay.textContent = `用户：${name}`
     this.loginStatus.textContent = isGuest ? '游客不计入排行榜' : ''
+  }
+
+  setStats(stats: { life: number; state: string; score: number; gold: number; wave: number }) {
+    this.lifeValue.textContent = `${stats.life}`
+    this.stateValue.textContent = stats.state
+    this.scoreValue.textContent = `${stats.score}`
+    this.goldValue.textContent = `${stats.gold}`
+    this.waveValue.textContent = `第 ${stats.wave} 波`
+
+    if (stats.life <= 0) this.lifeValue.classList.add('danger')
+    else this.lifeValue.classList.remove('danger')
+
+    if (stats.state === 'paused') this.pauseButton.textContent = '继续'
+    else this.pauseButton.textContent = '暂停'
+
+    this.pauseButton.disabled = stats.state === 'gameover'
   }
 }

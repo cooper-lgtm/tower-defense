@@ -15,7 +15,7 @@ import type {
 
 const towerDefs: Record<TowerType, TowerDefinition> = {
   CANNON: {
-    name: 'Cannon',
+    name: '加农炮',
     type: 'CANNON',
     baseDamage: 22,
     fireRate: 1.1,
@@ -24,7 +24,7 @@ const towerDefs: Record<TowerType, TowerDefinition> = {
     splashRadius: 0.6,
   },
   LMG: {
-    name: 'LMG',
+    name: '轻机枪',
     type: 'LMG',
     baseDamage: 10,
     fireRate: 3.2,
@@ -32,7 +32,7 @@ const towerDefs: Record<TowerType, TowerDefinition> = {
     costByLevel: [10, 16, 24, 36, 52],
   },
   HMG: {
-    name: 'HMG',
+    name: '重机枪',
     type: 'HMG',
     baseDamage: 40,
     fireRate: 0.85,
@@ -41,7 +41,7 @@ const towerDefs: Record<TowerType, TowerDefinition> = {
     splashRadius: 0.4,
   },
   LASER: {
-    name: 'Laser',
+    name: '激光炮',
     type: 'LASER',
     baseDamage: 55,
     fireRate: 0.65,
@@ -50,7 +50,7 @@ const towerDefs: Record<TowerType, TowerDefinition> = {
     pierce: 2,
   },
   WALL: {
-    name: 'Wall',
+    name: '路障',
     type: 'WALL',
     baseDamage: 0,
     fireRate: 0,

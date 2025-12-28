@@ -3,8 +3,8 @@ import { Game } from './core/game'
 import { createDefaultLevel } from './config/defaultLevel'
 import { OverlayUI } from './ui/overlay'
 import { AuthModal } from './ui/authModal'
-import { fetchLeaderboard, fetchLevel, loadToken } from './api/client'
-import type { LevelConfig, TowerType } from './types'
+import { fetchLeaderboard, fetchLevel, loadToken, submitScore } from './api/client'
+import type { LevelConfig, TowerType, GameState } from './types'
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('Missing #app root element')
@@ -29,7 +29,10 @@ app.appendChild(uiContainer)
 
 let game: Game | null = null
 let levelConfig: LevelConfig | null = null
-let started = false
+let overlay: OverlayUI | null = null
+let startButton: HTMLButtonElement
+let currentUser: { name: string; isGuest: boolean } = { name: 'guest', isGuest: true }
+let latestStats = { life: 0, state: 'menu' as GameState, score: 0, gold: 0, wave: 1 }
 
 async function loadLevel(): Promise<LevelConfig> {
   try {
@@ -39,29 +42,69 @@ async function loadLevel(): Promise<LevelConfig> {
   }
 }
 
-async function startGame() {
-  if (started) return
-  if (!levelConfig) {
-    levelConfig = await loadLevel()
-  }
-  game = new Game(canvas, levelConfig)
+function createGameInstance() {
+  if (!levelConfig || !overlay) return
+  game?.dispose()
+  game = new Game(canvas, levelConfig, {
+    onStats: (stats) => {
+      latestStats = stats
+      overlay!.setStats(stats)
+    },
+    onGameOver: (summary) => handleGameOver(summary).catch((err) => console.error(err)),
+    onStateChange: (state) => {
+      overlay!.setStats({ ...latestStats, state })
+    },
+  })
   game.start()
-  started = true
+  latestStats = game.getStats()
+  overlay!.setStats(latestStats)
+}
+
+async function handleGameOver(summary: { score: number; wave: number; timeMs: number; lifeLeft: number }) {
+  if (!levelConfig || !overlay) return
+  if (currentUser.isGuest) {
+    console.info('游客模式不上传成绩')
+    return
+  }
+
+  try {
+    await submitScore({
+      score: summary.score,
+      wave: summary.wave,
+      time_ms: summary.timeMs,
+      life_left: summary.lifeLeft,
+      level_id: levelConfig.metadata.id,
+      level_version: levelConfig.metadata.version,
+      level_hash: levelConfig.metadata.hash,
+    })
+    const entries = await fetchLeaderboard('endless')
+    overlay?.setLeaderboard(entries)
+  } catch (err) {
+    console.error('成绩上传失败', err)
+  }
 }
 
 async function bootstrap() {
   levelConfig = await loadLevel()
 
-  const overlay = new OverlayUI({
+  overlay = new OverlayUI({
     towerDefs: levelConfig.towers,
     onSelectTower: (type: TowerType) => game?.setBuildType(type),
     onRefreshLeaderboard: async () => {
       try {
         const entries = await fetchLeaderboard('endless')
-        overlay.setLeaderboard(entries)
+        overlay?.setLeaderboard(entries)
       } catch (err) {
         console.error(err)
       }
+    },
+    onTogglePause: () => {
+      if (!game) return
+      game.togglePause()
+      overlay?.setStats({ ...latestStats, state: game.getStats().state })
+    },
+    onRestart: () => {
+      createGameInstance()
     },
   })
   overlay.mount(uiContainer, leftColumn)
@@ -73,10 +116,19 @@ async function bootstrap() {
   } catch (err) {
     console.error('Leaderboard fetch failed', err)
   }
+  overlay.setStats({
+    life: levelConfig.grid.initialLife,
+    state: 'menu',
+    score: 0,
+    gold: Math.round(levelConfig.grid.initialGold),
+    wave: 1,
+  })
+
   // Auth modal
   const auth = new AuthModal({
     onAuthenticated: (info) => {
-      overlay.setUser(info.name, info.isGuest)
+      currentUser = info
+      overlay?.setUser(info.name, info.isGuest)
       startButton.style.display = 'block'
     },
   })
@@ -86,13 +138,17 @@ async function bootstrap() {
   loadToken()
 
   // Center start button overlay
-  const startButton = document.createElement('button')
+  startButton = document.createElement('button')
   startButton.className = 'panel center-start'
   startButton.style.display = 'none'
   startButton.textContent = '开始游戏'
   startButton.onclick = () => {
     startButton.style.display = 'none'
-    startGame().catch((err) => console.error(err))
+    if (!levelConfig) {
+      console.error('Level not loaded')
+      return
+    }
+    createGameInstance()
   }
   document.body.appendChild(startButton)
 }
