@@ -12,8 +12,18 @@ if (!app) throw new Error('Missing #app root element')
 const canvas = document.createElement('canvas')
 canvas.id = 'game-canvas'
 canvas.tabIndex = 0
-app.appendChild(canvas)
+// 左列：排行榜
+const leftColumn = document.createElement('div')
+leftColumn.id = 'left-column'
+app.appendChild(leftColumn)
 
+// 中列：画布
+const canvasWrapper = document.createElement('div')
+canvasWrapper.style.position = 'relative'
+canvasWrapper.appendChild(canvas)
+app.appendChild(canvasWrapper)
+
+// 右列：用户/塔/榜单
 const uiContainer = document.createElement('div')
 app.appendChild(uiContainer)
 
@@ -53,7 +63,7 @@ async function bootstrap() {
       }
     },
   })
-  overlay.mount(uiContainer)
+  overlay.mount(uiContainer, leftColumn)
 
   overlay.setLeaderboard([])
   try {

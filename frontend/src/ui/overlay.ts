@@ -30,24 +30,26 @@ export class OverlayUI {
 
     this.root.appendChild(this.buildLoginPanel())
     this.root.appendChild(this.buildTowerPanel())
-    this.root.appendChild(this.buildLeaderboardPanel())
   }
 
-  mount(target: HTMLElement) {
+  mount(target: HTMLElement, leaderboardContainer?: HTMLElement) {
     target.appendChild(this.root)
+    if (leaderboardContainer) {
+      const board = this.buildLeaderboardPanel()
+      leaderboardContainer.appendChild(board)
+    } else {
+      this.root.appendChild(this.buildLeaderboardPanel())
+    }
   }
 
   private buildLoginPanel(): HTMLElement {
     const panel = document.createElement('div')
     panel.className = 'panel'
 
-    const title = document.createElement('h3')
-    title.textContent = '登录 / 注册'
-    panel.appendChild(title)
-
     this.userDisplay = document.createElement('div')
     this.userDisplay.style.fontSize = '14px'
     this.userDisplay.style.color = '#0f172a'
+    this.userDisplay.style.fontWeight = '600'
     this.userDisplay.textContent = '用户：未登录'
     panel.appendChild(this.userDisplay)
 

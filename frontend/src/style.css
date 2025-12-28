@@ -19,8 +19,9 @@ body {
 #app {
   padding: 16px;
   display: grid;
-  grid-template-columns: auto 320px;
+  grid-template-columns: 320px auto 320px;
   gap: 16px;
+  align-items: start;
 }
 
 #game-canvas {
