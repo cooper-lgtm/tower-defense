@@ -1,6 +1,7 @@
 import type { LeaderboardEntry, LevelConfig } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8000/api'
+// Default to same-origin relative API so deployed frontend calls the server it's hosted on.
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
 
 let token: string | null = null
 
