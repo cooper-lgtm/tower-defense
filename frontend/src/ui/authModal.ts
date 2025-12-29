@@ -33,7 +33,7 @@ export class AuthModal {
     panel.appendChild(nameLabel)
 
     this.inputName = document.createElement('input')
-    this.inputName.placeholder = '玩家昵称，游客填 guest'
+    this.inputName.placeholder = '玩家昵称，游客可留空'
     panel.appendChild(this.inputName)
 
     const pwdLabel = document.createElement('label')
