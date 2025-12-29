@@ -24,3 +24,5 @@ API surface (prefixed by `/api`):
 - `WS /ws/leaderboard` → streaming leaderboard snapshot
 
 Level configs live in `app/data/levels/`. Hashing uses deterministic FNV-1a to align with the client.
+
+try to use webhook to auto deploy
