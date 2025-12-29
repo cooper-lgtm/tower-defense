@@ -56,7 +56,10 @@ class Leaderboard:
     if self.client:
       payload_key = f"{key}:payloads"
       user_ids = self.client.zrevrange(key, 0, limit - 1, withscores=False)
-      payloads = self.client.hmget(payload_key, user_ids)
+      if not user_ids:
+        return []
+      # redis-py hmget expects args unpacked, not a single list
+      payloads = self.client.hmget(payload_key, *user_ids)
       result: List[LeaderboardEntry] = []
       for raw in payloads:
         if raw:
