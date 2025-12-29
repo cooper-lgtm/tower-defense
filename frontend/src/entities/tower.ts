@@ -21,6 +21,8 @@ export class Tower {
       level,
       cell,
       cooldown: 0,
+      heading: 0,
+      shotTimer: 0,
     }
   }
 
@@ -32,6 +34,7 @@ export class Tower {
     if (this.def.type === 'WALL') return { killed: 0, damage: 0, scoreGain: 0 }
 
     this.data.cooldown = Math.max(0, this.data.cooldown - dt)
+    this.data.shotTimer = Math.max(0, this.data.shotTimer - dt)
 
     if (this.data.cooldown > 0) return { killed: 0, damage: 0, scoreGain: 0 }
 
@@ -56,10 +59,17 @@ export class Tower {
 
     if (!target) return { killed: 0, damage: 0, scoreGain: 0 }
 
+    const targetPos = target.position()
+    const dx = targetPos.x - origin.x
+    const dy = targetPos.y - origin.y
+    this.data.heading = Math.atan2(dy, dx)
+
     const damage = this.def.baseDamage * levelMultiplier(this.data.level)
     const { killed, dealt } = target.applyDamage(damage)
     const scoreGain = dealt > 0 ? Math.floor(Math.sqrt(dealt)) : 0
     this.data.cooldown = 1 / this.def.fireRate
+    this.data.shotTimer = 0.15
+    this.data.lastShot = targetPos
     return { killed: killed ? 1 : 0, damage: dealt, scoreGain }
   }
 }

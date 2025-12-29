@@ -120,6 +120,10 @@ function createGameInstance() {
       }
       showTowerMenu(info)
     },
+    onCancel: () => {
+      hideTowerMenu()
+      overlay?.clearTowerSelection()
+    },
   })
   game.start()
   latestStats = game.getStats()

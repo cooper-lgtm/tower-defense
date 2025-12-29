@@ -151,6 +151,17 @@ export class CanvasRenderer {
         )
         ctx.restore()
       }
+      if (tower.data.shotTimer > 0 && tower.data.lastShot) {
+        const alpha = Math.min(1, tower.data.shotTimer / 0.15)
+        ctx.save()
+        ctx.strokeStyle = `rgba(59,130,246,${alpha})`
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.moveTo(pos.x, pos.y)
+        ctx.lineTo(tower.data.lastShot.x, tower.data.lastShot.y)
+        ctx.stroke()
+        ctx.restore()
+      }
       this.drawTowerIcon(tower, pos.x, pos.y, map.cellSize, tower.data.type === 'WALL' ? '#94a3b8' : '#0ea5e9')
     }
   }
@@ -160,6 +171,9 @@ export class CanvasRenderer {
     const radius = size * 0.35
     ctx.save()
     ctx.translate(x, y)
+    if (tower.data.type !== 'WALL') {
+      ctx.rotate(tower.data.heading || 0)
+    }
     switch (tower.data.type) {
       case 'CANNON': {
         ctx.fillStyle = '#0ea5e9'

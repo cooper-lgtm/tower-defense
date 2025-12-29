@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..core.config import get_settings
 from ..core.db import get_db
 from ..core.deps import get_leaderboard
-from ..models import Score, User
+from ..models import Score, User, Level
 from ..schemas import (
   LeaderboardEntry,
   LeaderboardResponse,
@@ -144,6 +144,20 @@ def submit_score(
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Level hash mismatch")
   if payload.level_version != level["version"]:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Level version mismatch")
+
+  db_level = db.get(Level, payload.level_id)
+  if not db_level:
+    db_level = Level(
+      id=payload.level_id,
+      config_json=level["config"],
+      version=level["version"],
+      hash=level["hash"],
+    )
+    db.add(db_level)
+  else:
+    db_level.config_json = level["config"]
+    db_level.version = level["version"]
+    db_level.hash = level["hash"]
 
   score = Score(
     user_id=user.id,

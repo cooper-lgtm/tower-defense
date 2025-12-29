@@ -21,6 +21,7 @@ interface GameHooks {
   onGameOver?: (summary: { score: number; wave: number; timeMs: number; lifeLeft: number }) => void
   onStateChange?: (state: GameState) => void
   onTowerSelected?: (info: SelectedTowerInfo | null) => void
+  onCancel?: () => void
 }
 
 interface SelectedTowerInfo {
@@ -59,7 +60,7 @@ export class Game {
   private waveResult: WaveResult | null = null
   private basePath: Cell[]
   private waveLivesLost = 0
-  private buildSelection: TowerType = DEFAULT_BUILD_TOWER
+  private buildSelection: TowerType | null = DEFAULT_BUILD_TOWER
   private hooks?: GameHooks
   private startTime = 0
   private gameOverReported = false
@@ -97,13 +98,17 @@ export class Game {
     this.loop()
   }
 
-  setBuildType(type: TowerType): void {
+  setBuildType(type: TowerType | null): void {
     this.buildSelection = type
   }
 
   private setupInput(): void {
     // 鼠标/触摸移动：更新预览格子是否可建
     this.input.onMove((cell) => {
+      if (!this.buildSelection) {
+        this.preview = undefined
+        return
+      }
       const buildable = this.canBuild(cell)
       this.preview = { cell, buildable }
     })
@@ -115,7 +120,7 @@ export class Game {
         return
       }
       this.selectTower(null)
-      if (this.tryBuildTower(cell, this.buildSelection)) return
+      if (this.buildSelection && this.tryBuildTower(cell, this.buildSelection)) return
       this.setState(this.state.state === 'paused' ? 'running' : this.state.state)
     })
     // 快捷键：空格暂停/继续，N 跳过当前波（需无敌人）
@@ -127,6 +132,10 @@ export class Game {
       if (ev.code === 'KeyN') {
         ev.preventDefault()
         this.skipToNextWave()
+      }
+      if (ev.code === 'Escape') {
+        ev.preventDefault()
+        this.cancelSelection()
       }
     }
     window.addEventListener('keydown', this.keyHandler)
@@ -334,7 +343,7 @@ export class Game {
 
   private render(): void {
     const rangeHighlights: { x: number; y: number; radius: number; color: string; dashed?: boolean }[] = []
-    if (this.preview) {
+    if (this.preview && this.buildSelection) {
       const def = this.config.towers[this.buildSelection]
       if (def) {
         const world = this.map.worldFromCell(this.preview.cell)
@@ -458,6 +467,14 @@ export class Game {
     }
     const info = this.buildTowerInfo(tower)
     this.hooks?.onTowerSelected?.(info)
+  }
+
+  cancelSelection(): void {
+    this.preview = undefined
+    this.selectTower(null)
+    this.setBuildType(null)
+    this.hooks?.onStateChange?.(this.state.state)
+    this.hooks?.onCancel?.()
   }
 
   private buildTowerInfo(tower: Tower): SelectedTowerInfo {

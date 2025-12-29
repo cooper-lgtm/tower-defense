@@ -104,6 +104,9 @@ export interface TowerInstance {
   level: number
   cell: Cell
   cooldown: number
+  heading: number
+  shotTimer: number
+  lastShot?: { x: number; y: number }
 }
 
 export interface EnemyInstance {

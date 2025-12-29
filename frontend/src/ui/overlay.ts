@@ -218,6 +218,10 @@ export class OverlayUI {
     this.opts.onSelectTower(type)
   }
 
+  clearTowerSelection() {
+    this.towerButtons.forEach((btn) => btn.classList.remove('active'))
+  }
+
   setLeaderboard(entries: LeaderboardEntry[]) {
     this.leaderboardList.innerHTML = ''
     if (entries.length === 0) {
