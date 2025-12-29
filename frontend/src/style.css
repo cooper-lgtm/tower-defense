@@ -150,6 +150,29 @@ body {
   gap: 8px;
 }
 
+.tower-menu {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  z-index: 5;
+}
+
+.tower-menu button {
+  width: 120px;
+  text-align: left;
+}
+
+.tower-menu .secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
 .tower-row {
   display: flex;
   gap: 6px;

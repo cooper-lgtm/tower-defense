@@ -10,6 +10,7 @@ import { findPath } from '../pathfinding/aStar'
 import type { GeneratedWave, WaveResult } from '../logic/waveGenerator'
 import { generateWave } from '../logic/waveGenerator'
 import type { LevelConfig, Cell, TowerType, EnemyType, GameState } from '../types'
+import type { TowerDefinition } from '../types'
 
 const DEFAULT_BUILD_TOWER: TowerType = 'CANNON'
 // 刷怪间隔（秒）
@@ -19,6 +20,19 @@ interface GameHooks {
   onStats?: (stats: { wave: number; score: number; gold: number; life: number; state: GameState }) => void
   onGameOver?: (summary: { score: number; wave: number; timeMs: number; lifeLeft: number }) => void
   onStateChange?: (state: GameState) => void
+  onTowerSelected?: (info: SelectedTowerInfo | null) => void
+}
+
+interface SelectedTowerInfo {
+  id: number
+  type: TowerType
+  level: number
+  cell: Cell
+  world: { x: number; y: number }
+  range: number
+  upgradeCost: number | null
+  canAffordUpgrade: boolean
+  sellRefund: number
 }
 
 export class Game {
@@ -52,6 +66,7 @@ export class Game {
   private frameId = 0
   private disposed = false
   private keyHandler!: (ev: KeyboardEvent) => void
+  private selectedTower: Tower | null = null
 
   constructor(canvas: HTMLCanvasElement, config: LevelConfig, hooks?: GameHooks) {
     this.canvas = canvas
@@ -59,7 +74,7 @@ export class Game {
     this.hooks = hooks
     this.map = new GridMap(config.grid)
     this.renderer = new CanvasRenderer(canvas, this.map)
-    this.input = new InputController(canvas, this.map, window.devicePixelRatio || 1)
+    this.input = new InputController(canvas, this.map)
     this.gold = Math.round(config.grid.initialGold)
     this.life = config.grid.initialLife
     this.currentDifficulty = config.difficulty.base
@@ -92,8 +107,14 @@ export class Game {
       const buildable = this.canBuild(cell)
       this.preview = { cell, buildable }
     })
-    // 点击：尝试建默认塔，否则维持状态
+    // 点击：先检查塔选择，其次建造，最后切换暂停
     this.input.onClick((cell) => {
+      const existing = this.towers.find((t) => t.data.cell.x === cell.x && t.data.cell.y === cell.y)
+      if (existing) {
+        this.selectTower(existing)
+        return
+      }
+      this.selectTower(null)
       if (this.tryBuildTower(cell, this.buildSelection)) return
       this.setState(this.state.state === 'paused' ? 'running' : this.state.state)
     })
@@ -169,6 +190,7 @@ export class Game {
     this.map.occupy(cell)
     this.towers.push(new Tower(def, cell, 1, this.map))
     this.recomputeBasePath()
+    this.selectTower(null)
 
     // 重新为敌人指路
     for (const enemy of this.enemies) {
@@ -311,6 +333,31 @@ export class Game {
   }
 
   private render(): void {
+    const rangeHighlights: { x: number; y: number; radius: number; color: string; dashed?: boolean }[] = []
+    if (this.preview) {
+      const def = this.config.towers[this.buildSelection]
+      if (def) {
+        const world = this.map.worldFromCell(this.preview.cell)
+        rangeHighlights.push({
+          x: world.x,
+          y: world.y,
+          radius: def.range * this.map.cellSize,
+          color: this.preview.buildable ? 'rgba(34,197,94,0.16)' : 'rgba(248,113,113,0.16)',
+          dashed: true,
+        })
+      }
+    }
+    if (this.selectedTower) {
+      const def = this.selectedTower.definition()
+      const world = this.map.worldFromCell(this.selectedTower.data.cell)
+      rangeHighlights.push({
+        x: world.x,
+        y: world.y,
+        radius: def.range * this.map.cellSize,
+        color: 'rgba(59,130,246,0.18)',
+      })
+    }
+
     const state: RenderState = {
       towers: this.towers,
       enemies: this.enemies,
@@ -320,6 +367,8 @@ export class Game {
       wave: this.waveIndex + 1,
       state: this.state.state,
       preview: this.preview,
+      selectedTowerId: this.selectedTower?.data.id,
+      rangeHighlights,
     }
     this.renderer.render(state)
     this.hooks?.onStats?.(this.getStats())
@@ -391,6 +440,7 @@ export class Game {
   private handleGameOver(): void {
     if (this.gameOverReported) return
     this.gameOverReported = true
+    this.selectTower(null)
     const summary = {
       score: Math.floor(this.score),
       wave: this.waveIndex + 1,
@@ -398,5 +448,78 @@ export class Game {
       lifeLeft: this.life,
     }
     this.hooks?.onGameOver?.(summary)
+  }
+
+  private selectTower(tower: Tower | null): void {
+    this.selectedTower = tower
+    if (!tower) {
+      this.hooks?.onTowerSelected?.(null)
+      return
+    }
+    const info = this.buildTowerInfo(tower)
+    this.hooks?.onTowerSelected?.(info)
+  }
+
+  private buildTowerInfo(tower: Tower): SelectedTowerInfo {
+    const def = tower.definition()
+    const spent = this.totalCostForLevel(def, tower.data.level)
+    const upgradeCost = def.costByLevel[tower.data.level] ?? null
+    const sellRefund = Math.round(spent * this.config.economy.sellRefundRate)
+    return {
+      id: tower.data.id,
+      type: tower.data.type,
+      level: tower.data.level,
+      cell: tower.data.cell,
+      world: this.map.worldFromCell(tower.data.cell),
+      range: def.range,
+      upgradeCost,
+      canAffordUpgrade: upgradeCost != null && this.gold >= upgradeCost,
+      sellRefund,
+    }
+  }
+
+  upgradeSelectedTower(): void {
+    if (!this.selectedTower) return
+    const def = this.selectedTower.definition()
+    const nextCost = def.costByLevel[this.selectedTower.data.level]
+    if (nextCost == null) {
+      this.flashStatus('已满级')
+      return
+    }
+    if (this.gold < nextCost) {
+      this.flashStatus('金币不足')
+      return
+    }
+    this.gold -= nextCost
+    this.selectedTower.data.level += 1
+    this.flashStatus(`升级成功 (-${nextCost})`)
+    this.selectTower(this.selectedTower)
+  }
+
+  sellSelectedTower(): void {
+    if (!this.selectedTower) return
+    const refund = this.buildTowerInfo(this.selectedTower).sellRefund
+    this.gold += refund
+    const cell = this.selectedTower.data.cell
+    this.map.release(cell)
+    this.towers = this.towers.filter((t) => t.data.id !== this.selectedTower?.data.id)
+    this.selectTower(null)
+    this.flashStatus(`已出售 +${refund}`)
+    this.recomputeBasePath()
+    // 重新引导敌人
+    for (const enemy of this.enemies) {
+      const pos = enemy.position()
+      const start = this.map.cellFromWorld(pos.x, pos.y)
+      const path = findPath(this.map, start, this.map.exit, this.map.blockedWithOccupancy())
+      if (path) enemy.retargetPath(path)
+    }
+  }
+
+  private totalCostForLevel(def: TowerDefinition, level: number): number {
+    let total = 0
+    for (let i = 0; i < level; i += 1) {
+      total += def.costByLevel[i] || 0
+    }
+    return total
   }
 }

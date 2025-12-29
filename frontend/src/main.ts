@@ -23,6 +23,24 @@ canvasWrapper.style.position = 'relative'
 canvasWrapper.appendChild(canvas)
 app.appendChild(canvasWrapper)
 
+const towerMenu = document.createElement('div')
+towerMenu.className = 'tower-menu'
+const upgradeBtn = document.createElement('button')
+upgradeBtn.textContent = '升级'
+const sellBtn = document.createElement('button')
+sellBtn.className = 'secondary'
+towerMenu.appendChild(upgradeBtn)
+towerMenu.appendChild(sellBtn)
+canvasWrapper.appendChild(towerMenu)
+towerMenu.style.display = 'none'
+upgradeBtn.onclick = () => {
+  game?.upgradeSelectedTower()
+}
+sellBtn.onclick = () => {
+  game?.sellSelectedTower()
+  hideTowerMenu()
+}
+
 // 右列：用户/塔/榜单
 const uiContainer = document.createElement('div')
 app.appendChild(uiContainer)
@@ -33,6 +51,38 @@ let overlay: OverlayUI | null = null
 let startButton: HTMLButtonElement
 let currentUser: { name: string; isGuest: boolean } = { name: 'guest', isGuest: true }
 let latestStats = { life: 0, state: 'menu' as GameState, score: 0, gold: 0, wave: 1 }
+let latestSelection:
+  | {
+      world: { x: number; y: number }
+      upgradeCost: number | null
+      canAffordUpgrade: boolean
+      sellRefund: number
+    }
+  | null = null
+
+function hideTowerMenu() {
+  towerMenu.style.display = 'none'
+}
+
+function showTowerMenu(info: {
+  world: { x: number; y: number }
+  upgradeCost: number | null
+  canAffordUpgrade: boolean
+  sellRefund: number
+}) {
+  const offsetX = (levelConfig?.grid.cellSize ?? 32) * 0.6
+  towerMenu.style.display = 'flex'
+  towerMenu.style.left = `${info.world.x + offsetX}px`
+  towerMenu.style.top = `${info.world.y - (levelConfig?.grid.cellSize ?? 32) * 0.4}px`
+  if (info.upgradeCost == null) {
+    upgradeBtn.textContent = '升级（满级）'
+    upgradeBtn.disabled = true
+  } else {
+    upgradeBtn.textContent = `升级 (-${info.upgradeCost})`
+    upgradeBtn.disabled = !info.canAffordUpgrade
+  }
+  sellBtn.textContent = `出售 (+${info.sellRefund})`
+}
 
 async function loadLevel(): Promise<LevelConfig> {
   try {
@@ -45,14 +95,30 @@ async function loadLevel(): Promise<LevelConfig> {
 function createGameInstance() {
   if (!levelConfig || !overlay) return
   game?.dispose()
+  latestSelection = null
+  hideTowerMenu()
   game = new Game(canvas, levelConfig, {
     onStats: (stats) => {
       latestStats = stats
       overlay!.setStats(stats)
+      if (latestSelection) {
+        const canAfford =
+          latestSelection.upgradeCost != null ? stats.gold >= latestSelection.upgradeCost : false
+        latestSelection = { ...latestSelection, canAffordUpgrade: canAfford }
+        showTowerMenu(latestSelection)
+      }
     },
     onGameOver: (summary) => handleGameOver(summary).catch((err) => console.error(err)),
     onStateChange: (state) => {
       overlay!.setStats({ ...latestStats, state })
+    },
+    onTowerSelected: (info) => {
+      latestSelection = info
+      if (!info) {
+        hideTowerMenu()
+        return
+      }
+      showTowerMenu(info)
     },
   })
   game.start()

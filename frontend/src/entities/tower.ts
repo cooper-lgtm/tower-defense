@@ -24,6 +24,10 @@ export class Tower {
     }
   }
 
+  definition(): TowerDefinition {
+    return this.def
+  }
+
   update(dt: number, enemies: Enemy[]): { killed: number; damage: number; scoreGain: number } {
     if (this.def.type === 'WALL') return { killed: 0, damage: 0, scoreGain: 0 }
 

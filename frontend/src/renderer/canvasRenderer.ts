@@ -16,6 +16,8 @@ export interface RenderState {
     cell: Cell
     buildable: boolean
   }
+  selectedTowerId?: number
+  rangeHighlights?: { x: number; y: number; radius: number; color: string; dashed?: boolean }[]
 }
 
 export class CanvasRenderer {
@@ -54,7 +56,8 @@ export class CanvasRenderer {
 
     this.drawGrid()
     this.drawPreview(state.preview)
-    this.drawTowers(state.towers)
+    this.drawRanges(state.rangeHighlights)
+    this.drawTowers(state.towers, state.selectedTowerId)
     this.drawEnemies(state.enemies)
 
     // Entry/exit markers on top
@@ -111,21 +114,120 @@ export class CanvasRenderer {
     ctx.fillRect(px, py, map.cellSize, map.cellSize)
   }
 
-  private drawTowers(towers: Tower[]): void {
+  private drawRanges(ranges?: { x: number; y: number; radius: number; color: string; dashed?: boolean }[]) {
+    if (!ranges || ranges.length === 0) return
+    const { ctx } = this
+    ctx.save()
+    ctx.lineWidth = 2
+    for (const r of ranges) {
+      ctx.beginPath()
+      ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2)
+      ctx.strokeStyle = r.color
+      if (r.dashed) ctx.setLineDash([8, 6])
+      else ctx.setLineDash([])
+      ctx.fillStyle = r.color
+      ctx.globalAlpha = 0.4
+      ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+
+  private drawTowers(towers: Tower[], selectedId?: number): void {
     const { ctx, map } = this
     for (const tower of towers) {
       const pos = map.worldFromCell(tower.data.cell)
-      ctx.fillStyle = '#0ea5e9'
-      if (tower.data.type === 'WALL') ctx.fillStyle = '#94a3b8'
-      ctx.beginPath()
-      ctx.rect(
-        pos.x - map.cellSize * 0.35,
-        pos.y - map.cellSize * 0.35,
-        map.cellSize * 0.7,
-        map.cellSize * 0.7
-      )
-      ctx.fill()
+      if (tower.data.id === selectedId) {
+        ctx.save()
+        ctx.strokeStyle = '#2563eb'
+        ctx.lineWidth = 2
+        ctx.setLineDash([6, 4])
+        ctx.strokeRect(
+          pos.x - map.cellSize * 0.45,
+          pos.y - map.cellSize * 0.45,
+          map.cellSize * 0.9,
+          map.cellSize * 0.9
+        )
+        ctx.restore()
+      }
+      this.drawTowerIcon(tower, pos.x, pos.y, map.cellSize, tower.data.type === 'WALL' ? '#94a3b8' : '#0ea5e9')
     }
+  }
+
+  private drawTowerIcon(tower: Tower, x: number, y: number, size: number, baseColor: string): void {
+    const { ctx } = this
+    const radius = size * 0.35
+    ctx.save()
+    ctx.translate(x, y)
+    switch (tower.data.type) {
+      case 'CANNON': {
+        ctx.fillStyle = '#0ea5e9'
+        ctx.beginPath()
+        ctx.arc(0, 0, radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#1d4ed8'
+        ctx.fillRect(-radius * 0.2, -radius * 1.1, radius * 0.4, radius * 1.4)
+        ctx.fillStyle = '#38bdf8'
+        ctx.fillRect(-radius * 0.9, -radius * 0.5, radius * 1.8, radius * 1.0)
+        break
+      }
+      case 'LMG': {
+        ctx.fillStyle = '#22c55e'
+        ctx.beginPath()
+        ctx.rect(-radius * 0.8, -radius * 0.6, radius * 1.6, radius * 1.2)
+        ctx.fill()
+        ctx.fillStyle = '#16a34a'
+        ctx.fillRect(-radius * 0.1, -radius * 1.1, radius * 0.2, radius * 1.3)
+        ctx.fillStyle = '#bbf7d0'
+        ctx.fillRect(radius * 0.5, -radius * 0.3, radius * 0.9, radius * 0.6)
+        break
+      }
+      case 'HMG': {
+        ctx.fillStyle = '#f59e0b'
+        ctx.beginPath()
+        ctx.rect(-radius * 0.9, -radius * 0.9, radius * 1.8, radius * 1.8)
+        ctx.fill()
+        ctx.fillStyle = '#c2410c'
+        ctx.fillRect(-radius * 0.2, -radius * 1.2, radius * 0.4, radius * 1.5)
+        ctx.fillStyle = '#fed7aa'
+        ctx.fillRect(radius * 0.6, -radius * 0.25, radius * 0.9, radius * 0.5)
+        break
+      }
+      case 'LASER': {
+        ctx.fillStyle = '#a855f7'
+        ctx.beginPath()
+        ctx.rect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4)
+        ctx.fill()
+        ctx.strokeStyle = '#f43f5e'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.moveTo(-radius * 1.1, 0)
+        ctx.lineTo(radius * 1.1, 0)
+        ctx.stroke()
+        ctx.fillStyle = '#f9a8d4'
+        ctx.beginPath()
+        ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2)
+        ctx.fill()
+        break
+      }
+      case 'WALL': {
+        ctx.fillStyle = '#94a3b8'
+        ctx.beginPath()
+        ctx.rect(-radius, -radius, radius * 2, radius * 2)
+        ctx.fill()
+        ctx.fillStyle = '#cbd5e1'
+        ctx.fillRect(-radius * 0.9, -radius * 0.4, radius * 1.8, radius * 0.8)
+        break
+      }
+      default: {
+        ctx.fillStyle = baseColor
+        ctx.beginPath()
+        ctx.rect(-radius, -radius, radius * 2, radius * 2)
+        ctx.fill()
+      }
+    }
+    ctx.restore()
   }
 
   private drawEnemies(enemies: Enemy[]): void {

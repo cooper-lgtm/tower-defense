@@ -10,16 +10,14 @@ export class InputController {
   private onMoveHandlers: MoveHandler[] = []
   private canvas: HTMLCanvasElement
   private grid: GridMap
-  private dpr: number
   private clickListener!: (ev: MouseEvent) => void
   private moveListener!: (ev: MouseEvent) => void
   private touchEndListener!: (ev: TouchEvent) => void
   private touchMoveListener!: (ev: TouchEvent) => void
 
-  constructor(canvas: HTMLCanvasElement, grid: GridMap, dpr: number) {
+  constructor(canvas: HTMLCanvasElement, grid: GridMap) {
     this.canvas = canvas
     this.grid = grid
-    this.dpr = dpr
     this.attach()
   }
 
@@ -35,8 +33,8 @@ export class InputController {
     // 将屏幕坐标换算到 canvas 逻辑坐标后转成格子
     const handlePointer = (clientX: number, clientY: number, isClick: boolean) => {
       const rect = this.canvas.getBoundingClientRect()
-      const x = (clientX - rect.left) * this.dpr
-      const y = (clientY - rect.top) * this.dpr
+      const x = clientX - rect.left
+      const y = clientY - rect.top
       const cell = this.grid.cellFromWorld(x, y)
       if (isClick) {
         this.onClickHandlers.forEach((fn) => fn(cell))
