@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# 使用腾讯云镜像源加速基础镜像拉取
+FROM mirror.ccs.tencentyun.com/library/python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
