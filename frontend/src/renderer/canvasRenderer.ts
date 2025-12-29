@@ -151,19 +151,46 @@ export class CanvasRenderer {
         )
         ctx.restore()
       }
-      if (tower.data.shotTimer > 0 && tower.data.lastShot) {
-        const alpha = Math.min(1, tower.data.shotTimer / 0.15)
-        ctx.save()
-        ctx.strokeStyle = `rgba(59,130,246,${alpha})`
-        ctx.lineWidth = 3
-        ctx.beginPath()
-        ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(tower.data.lastShot.x, tower.data.lastShot.y)
-        ctx.stroke()
-        ctx.restore()
-      }
+      this.drawProjectile(tower)
       this.drawTowerIcon(tower, pos.x, pos.y, map.cellSize, tower.data.type === 'WALL' ? '#94a3b8' : '#0ea5e9')
     }
+  }
+
+  private drawProjectile(tower: Tower) {
+    if (!tower.data.lastShot || tower.data.shotTimer <= 0 || !tower.data.lastShotStart) return
+    const { ctx } = this
+    const t = tower.data.shotTimer
+    const isLaser = tower.data.type === 'LASER'
+    const duration = tower.data.shotDuration || (isLaser ? 0.3 : 0.12)
+    const alpha = isLaser ? 0.8 : Math.min(1, t / duration)
+    const start = tower.data.lastShotStart
+    const end = tower.data.lastShot
+    const progress = 1 - t / duration
+
+    ctx.save()
+    if (isLaser) {
+      ctx.strokeStyle = `rgba(244,63,94,${0.55 * alpha})`
+      ctx.lineWidth = 2.6
+      ctx.beginPath()
+      ctx.moveTo(start.x, start.y)
+      ctx.lineTo(end.x, end.y)
+      ctx.stroke()
+      ctx.strokeStyle = `rgba(168,85,247,${0.35 * alpha})`
+      ctx.lineWidth = 4
+      ctx.stroke()
+    } else {
+      const color =
+        tower.data.type === 'CANNON' ? '#1d4ed8' : tower.data.type === 'HMG' ? '#ea580c' : '#22c55e'
+      // 子弹当前位置插值
+      const bx = start.x + (end.x - start.x) * progress
+      const by = start.y + (end.y - start.y) * progress
+      ctx.fillStyle = color
+      const radius = tower.data.type === 'CANNON' ? 4 : tower.data.type === 'HMG' ? 3 : 2.4
+      ctx.beginPath()
+      ctx.arc(bx, by, radius, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
   }
 
   private drawTowerIcon(tower: Tower, x: number, y: number, size: number, baseColor: string): void {
@@ -178,51 +205,47 @@ export class CanvasRenderer {
       case 'CANNON': {
         ctx.fillStyle = '#0ea5e9'
         ctx.beginPath()
-        ctx.arc(0, 0, radius, 0, Math.PI * 2)
+        ctx.arc(-radius * 0.25, 0, radius * 0.9, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = '#1d4ed8'
-        ctx.fillRect(-radius * 0.2, -radius * 1.1, radius * 0.4, radius * 1.4)
         ctx.fillStyle = '#38bdf8'
-        ctx.fillRect(-radius * 0.9, -radius * 0.5, radius * 1.8, radius * 1.0)
+        ctx.fillRect(0, -radius * 0.3, radius * 1.1, radius * 0.6)
+        ctx.fillStyle = '#1d4ed8'
+        ctx.fillRect(radius * 0.4, -radius * 0.18, radius * 0.9, radius * 0.36)
         break
       }
       case 'LMG': {
-        ctx.fillStyle = '#22c55e'
-        ctx.beginPath()
-        ctx.rect(-radius * 0.8, -radius * 0.6, radius * 1.6, radius * 1.2)
-        ctx.fill()
         ctx.fillStyle = '#16a34a'
-        ctx.fillRect(-radius * 0.1, -radius * 1.1, radius * 0.2, radius * 1.3)
+        ctx.beginPath()
+        ctx.rect(-radius * 0.9, -radius * 0.6, radius * 1.6, radius * 1.2)
+        ctx.fill()
+        ctx.fillStyle = '#22c55e'
+        ctx.fillRect(0, -radius * 0.18, radius * 1.1, radius * 0.36)
         ctx.fillStyle = '#bbf7d0'
-        ctx.fillRect(radius * 0.5, -radius * 0.3, radius * 0.9, radius * 0.6)
+        ctx.fillRect(radius * 0.9, -radius * 0.22, radius * 0.5, radius * 0.44)
         break
       }
       case 'HMG': {
         ctx.fillStyle = '#f59e0b'
         ctx.beginPath()
-        ctx.rect(-radius * 0.9, -radius * 0.9, radius * 1.8, radius * 1.8)
+        ctx.rect(-radius * 0.95, -radius * 0.8, radius * 1.6, radius * 1.6)
         ctx.fill()
-        ctx.fillStyle = '#c2410c'
-        ctx.fillRect(-radius * 0.2, -radius * 1.2, radius * 0.4, radius * 1.5)
+        ctx.fillStyle = '#ea580c'
+        ctx.fillRect(0, -radius * 0.22, radius * 1.05, radius * 0.44)
         ctx.fillStyle = '#fed7aa'
-        ctx.fillRect(radius * 0.6, -radius * 0.25, radius * 0.9, radius * 0.5)
+        ctx.fillRect(radius * 0.8, -radius * 0.3, radius * 0.45, radius * 0.6)
         break
       }
       case 'LASER': {
         ctx.fillStyle = '#a855f7'
         ctx.beginPath()
-        ctx.rect(-radius * 0.7, -radius * 0.7, radius * 1.4, radius * 1.4)
+        ctx.rect(-radius * 0.7, -radius * 0.7, radius * 1.2, radius * 1.2)
         ctx.fill()
-        ctx.strokeStyle = '#f43f5e'
-        ctx.lineWidth = 3
-        ctx.beginPath()
-        ctx.moveTo(-radius * 1.1, 0)
-        ctx.lineTo(radius * 1.1, 0)
-        ctx.stroke()
         ctx.fillStyle = '#f9a8d4'
         ctx.beginPath()
-        ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2)
+        ctx.arc(-radius * 0.2, 0, radius * 0.35, 0, Math.PI * 2)
         ctx.fill()
+        ctx.fillStyle = '#f43f5e'
+        ctx.fillRect(radius * 0.2, -radius * 0.2, radius * 0.9, radius * 0.4)
         break
       }
       case 'WALL': {

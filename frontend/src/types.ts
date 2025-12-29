@@ -107,6 +107,9 @@ export interface TowerInstance {
   heading: number
   shotTimer: number
   lastShot?: { x: number; y: number }
+  lastShotStart?: { x: number; y: number }
+  shotDuration?: number
+  lastTargetId?: number
 }
 
 export interface EnemyInstance {
