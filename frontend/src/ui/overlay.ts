@@ -13,7 +13,7 @@ const towerMeta: Record<TowerType, { label: string; desc: string }> = {
   FREEZE: { label: '冷冻炮', desc: '命中减速50%' },
   LMG: { label: '轻机枪', desc: '远程速射' },
   HMG: { label: '重机枪', desc: '近中高伤' },
-  LASER: { label: '激光炮', desc: '中远瞬时多目标' },
+  LASER: { label: '激光塔', desc: '中远瞬时多目标' },
   WALL: { label: '路障', desc: '阻挡' },
 }
 

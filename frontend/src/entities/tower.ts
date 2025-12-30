@@ -92,7 +92,7 @@ export class Tower {
 
     const damage = this.damagePerShot()
     const splashPx = (this.def.splashRadius ?? 0) * this.map.cellSize
-    const muzzleOffset = this.map.cellSize * 0.45
+    const muzzleOffset = this.def.type === 'LASER' ? this.map.cellSize * 0.15 : this.map.cellSize * 0.45
     const start = {
       x: origin.x + Math.cos(this.data.heading) * muzzleOffset,
       y: origin.y + Math.sin(this.data.heading) * muzzleOffset,

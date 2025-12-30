@@ -41,7 +41,7 @@ const towerDefs: Record<TowerType, TowerDefinition> = {
     splashRadius: 0.4,
   },
   LASER: {
-    name: '激光炮',
+    name: '激光塔',
     type: 'LASER',
     baseDamage: 55,
     fireRate: 0.65,

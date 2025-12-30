@@ -254,16 +254,19 @@ export class CanvasRenderer {
         break
       }
       case 'LASER': {
-        ctx.fillStyle = '#a855f7'
+        // 球形能量核心
+        const grad = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius * 0.9)
+        grad.addColorStop(0, '#f9a8d4')
+        grad.addColorStop(0.4, '#c084fc')
+        grad.addColorStop(1, '#7c3aed')
+        ctx.fillStyle = grad
         ctx.beginPath()
-        ctx.rect(-radius * 0.7, -radius * 0.7, radius * 1.2, radius * 1.2)
+        ctx.arc(0, 0, radius * 0.9, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = '#f9a8d4'
+        ctx.fillStyle = 'rgba(244,63,94,0.8)'
         ctx.beginPath()
-        ctx.arc(-radius * 0.2, 0, radius * 0.35, 0, Math.PI * 2)
+        ctx.arc(0, 0, radius * 0.45, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = '#f43f5e'
-        ctx.fillRect(radius * 0.2, -radius * 0.2, radius * 0.9, radius * 0.4)
         break
       }
       case 'FREEZE': {
