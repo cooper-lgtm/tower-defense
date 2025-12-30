@@ -89,3 +89,13 @@ class LeaderboardResponse(BaseModel):
   level: str
   scope: str = "all"
   entries: List[LeaderboardEntry]
+
+
+class BestScoreResponse(BaseModel):
+  """用户最高分（不论是否上榜）。"""
+
+  best_score: Optional[int]
+  wave: Optional[int]
+  time_ms: Optional[int]
+  life_left: Optional[int]
+  created_at: Optional[datetime]

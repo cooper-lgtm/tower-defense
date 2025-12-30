@@ -26,6 +26,7 @@ export class OverlayUI {
   private towerButtons: Map<TowerType, HTMLButtonElement> = new Map()
   private opts: OverlayOptions
   private userDisplay!: HTMLDivElement
+  private bestDisplay!: HTMLSpanElement
   private towerDefs: Record<TowerType, TowerDefinition>
   private lifeValue!: HTMLSpanElement
   private stateValue!: HTMLSpanElement
@@ -63,12 +64,29 @@ export class OverlayUI {
     const panel = document.createElement('div')
     panel.className = 'panel'
 
+    const topRow = document.createElement('div')
+    topRow.style.display = 'flex'
+    topRow.style.justifyContent = 'space-between'
+    topRow.style.alignItems = 'center'
+
     this.userDisplay = document.createElement('div')
     this.userDisplay.style.fontSize = '14px'
     this.userDisplay.style.color = '#0f172a'
     this.userDisplay.style.fontWeight = '600'
     this.userDisplay.textContent = '用户：未登录'
-    panel.appendChild(this.userDisplay)
+    topRow.appendChild(this.userDisplay)
+
+    const bestWrapper = document.createElement('div')
+    bestWrapper.style.fontSize = '14px'
+    bestWrapper.style.color = '#ef4444'
+    bestWrapper.style.fontWeight = '600'
+    bestWrapper.textContent = '最高分：'
+    this.bestDisplay = document.createElement('span')
+    this.bestDisplay.textContent = '—'
+    bestWrapper.appendChild(this.bestDisplay)
+    topRow.appendChild(bestWrapper)
+
+    panel.appendChild(topRow)
 
     this.loginStatus = document.createElement('div')
     this.loginStatus.style.fontSize = '12px'
@@ -241,6 +259,11 @@ export class OverlayUI {
   setUser(name: string, isGuest: boolean) {
     this.userDisplay.textContent = `用户：${name}`
     this.loginStatus.textContent = isGuest ? '游客不计入排行榜' : ''
+    if (isGuest) this.setBestScore(null)
+  }
+
+  setBestScore(score: number | null) {
+    this.bestDisplay.textContent = score == null ? '—' : `${score}`
   }
 
   setStats(stats: { life: number; state: string; score: number; gold: number; wave: number }) {

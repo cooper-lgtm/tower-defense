@@ -80,3 +80,15 @@ export async function submitScore(payload: ScoreSubmitPayload) {
     }),
   })
 }
+
+export interface BestScore {
+  best_score: number | null
+  wave: number | null
+  time_ms: number | null
+  life_left: number | null
+  created_at: string | null
+}
+
+export async function fetchBestScore(level = 'endless'): Promise<BestScore> {
+  return apiFetch(`/score/best?level=${level}`)
+}

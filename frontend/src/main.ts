@@ -3,7 +3,7 @@ import { Game } from './core/game'
 import { createDefaultLevel } from './config/defaultLevel'
 import { OverlayUI } from './ui/overlay'
 import { AuthModal } from './ui/authModal'
-import { fetchLeaderboard, fetchLevel, loadToken, submitScore } from './api/client'
+import { fetchLeaderboard, fetchLevel, fetchBestScore, loadToken, submitScore } from './api/client'
 import type { LevelConfig, TowerType, GameState } from './types'
 
 const app = document.querySelector<HTMLDivElement>('#app')
@@ -149,8 +149,23 @@ async function handleGameOver(summary: { score: number; wave: number; timeMs: nu
     })
     const entries = await fetchLeaderboard('endless')
     overlay?.setLeaderboard(entries)
+    await refreshBestScore()
   } catch (err) {
     console.error('成绩上传失败', err)
+  }
+}
+
+async function refreshBestScore() {
+  if (!overlay) return
+  if (currentUser.isGuest) {
+    overlay.setBestScore(null)
+    return
+  }
+  try {
+    const best = await fetchBestScore('endless')
+    overlay.setBestScore(best.best_score)
+  } catch (err) {
+    console.error('获取最高分失败', err)
   }
 }
 
@@ -193,12 +208,14 @@ async function bootstrap() {
     gold: Math.round(levelConfig.grid.initialGold),
     wave: 1,
   })
+  overlay.setBestScore(null)
 
   // Auth modal
   const auth = new AuthModal({
     onAuthenticated: (info) => {
       currentUser = info
       overlay?.setUser(info.name, info.isGuest)
+      refreshBestScore().catch((err) => console.error(err))
       startButton.style.display = 'block'
     },
   })

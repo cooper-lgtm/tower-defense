@@ -11,6 +11,7 @@ from ..core.db import get_db
 from ..core.deps import get_leaderboard
 from ..models import Score, User, Level
 from ..schemas import (
+  BestScoreResponse,
   LeaderboardEntry,
   LeaderboardResponse,
   LevelResponse,
@@ -183,3 +184,37 @@ def submit_score(
   leaderboard.submit(payload.level_id, lb_entry, scope="all")
 
   return ScoreOut.model_validate(score)
+
+
+@router.get("/score/best", response_model=BestScoreResponse)
+def best_score(
+  level: str = Query("endless"),
+  db: Session = Depends(get_db),
+  user: User = Depends(get_current_user),
+) -> BestScoreResponse:
+  """返回当前用户该关卡的最高分（即便不在榜单内）。"""
+  if user.name == "guest":
+    return BestScoreResponse(
+      best_score=None,
+      wave=None,
+      time_ms=None,
+      life_left=None,
+      created_at=None,
+    )
+
+  best = (
+    db.query(Score)
+    .filter(Score.user_id == user.id, Score.level_id == level)
+    .order_by(Score.score.desc(), Score.time_ms.asc())
+    .first()
+  )
+  if not best:
+    return BestScoreResponse(best_score=None, wave=None, time_ms=None, life_left=None, created_at=None)
+
+  return BestScoreResponse(
+    best_score=best.score,
+    wave=best.wave,
+    time_ms=best.time_ms,
+    life_left=best.life_left,
+    created_at=best.created_at,
+  )
