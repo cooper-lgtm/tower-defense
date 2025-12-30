@@ -64,19 +64,58 @@ export interface ScoreSubmitPayload {
   level_id: string
   level_version: string
   level_hash: string
+  ops_digest?: string
+}
+
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+  ])
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function signScorePayload(payload: ScoreSubmitPayload) {
+  const secret = import.meta.env.VITE_SCORE_SIGNING_KEY
+  if (!secret) throw new Error('缺少 VITE_SCORE_SIGNING_KEY，用于成绩签名')
+  const timestamp = Math.floor(Date.now() / 1000)
+  const nonce = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+  const ops = payload.ops_digest ?? ''
+  const message = [
+    payload.level_id,
+    payload.level_version,
+    payload.level_hash,
+    String(payload.score),
+    String(payload.wave),
+    String(payload.time_ms),
+    String(payload.life_left),
+    String(timestamp),
+    nonce,
+    ops,
+  ].join('|')
+  const signature = await hmacSha256Hex(secret, message)
+  return { ...payload, timestamp, nonce, signature, ops_digest: payload.ops_digest }
 }
 
 export async function submitScore(payload: ScoreSubmitPayload) {
+  const signed = await signScorePayload(payload)
   return apiFetch('/score', {
     method: 'POST',
     body: JSON.stringify({
-      score: payload.score,
-      wave: payload.wave,
-      time_ms: payload.time_ms,
-      life_left: payload.life_left,
-      level_id: payload.level_id,
-      level_version: payload.level_version,
-      level_hash: payload.level_hash,
+      score: signed.score,
+      wave: signed.wave,
+      time_ms: signed.time_ms,
+      life_left: signed.life_left,
+      level_id: signed.level_id,
+      level_version: signed.level_version,
+      level_hash: signed.level_hash,
+      timestamp: signed.timestamp,
+      nonce: signed.nonce,
+      signature: signed.signature,
+      ops_digest: signed.ops_digest,
     }),
   })
 }

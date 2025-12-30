@@ -1,4 +1,12 @@
+import time
+import uuid
+
 from app.services.levels import load_level
+from app.schemas import ScoreSubmit
+from app.core.config import get_settings
+from app.utils.security import compute_score_signature
+
+settings = get_settings()
 
 
 def register_and_login(client, name: str, password: str = "p@ss") -> str:
@@ -21,15 +29,10 @@ def test_submit_score_and_fetch_best_score(client):
   submit_path = client.app.url_path_for("submit_score")
   best_path = client.app.url_path_for("best_score")
   level = load_level("endless")
-  payload = {
-    "level_id": level["id"],
-    "level_version": level["version"],
-    "level_hash": level["hash"],
-    "score": 1200,
-    "wave": 8,
-    "time_ms": 90000,
-    "life_left": 7,
-  }
+  payload = signed_score_payload(
+    level,
+    overrides={"score": 1200, "wave": 8, "time_ms": 90000, "life_left": 7},
+  )
 
   submit = client.post(submit_path, json=payload, headers=headers)
   assert submit.status_code == 200
@@ -62,20 +65,12 @@ def test_leaderboard_orders_and_deduplicates(client):
     "life_left": 10,
   }
 
-  client.post(
-    submit_path,
-    json={**base_payload, "score": 1000, "time_ms": 85000},
-    headers=alice_headers,
-  )
-  client.post(
-    submit_path,
-    json={**base_payload, "score": 1500, "time_ms": 90000},
-    headers=bob_headers,
-  )
+  client.post(submit_path, json=signed_score_payload(level, {**base_payload, "score": 1000, "time_ms": 85000}), headers=alice_headers)
+  client.post(submit_path, json=signed_score_payload(level, {**base_payload, "score": 1500, "time_ms": 90000}), headers=bob_headers)
   # Alice 再次提交更高分，应该覆盖她在榜单中的记录
   client.post(
     submit_path,
-    json={**base_payload, "score": 1800, "time_ms": 87000},
+    json=signed_score_payload(level, {**base_payload, "score": 1800, "time_ms": 87000}),
     headers=alice_headers,
   )
 
@@ -88,3 +83,23 @@ def test_leaderboard_orders_and_deduplicates(client):
   assert entries[0]["score"] == 1800
   assert entries[1]["name"] == "bob"
   assert entries[1]["score"] == 1500
+
+
+def signed_score_payload(level: dict, overrides: dict) -> dict:
+  """构建带签名的成绩请求体。"""
+  base = {
+    "level_id": level["id"],
+    "level_version": level["version"],
+    "level_hash": level["hash"],
+    "score": overrides.get("score", 0),
+    "wave": overrides.get("wave", 1),
+    "time_ms": overrides.get("time_ms", 0),
+    "life_left": overrides.get("life_left", 0),
+    "timestamp": int(time.time()),
+    "nonce": str(uuid.uuid4()),
+    "ops_digest": overrides.get("ops_digest"),
+  }
+  # 使用 Pydantic 校验 payload 结构，生成签名
+  model = ScoreSubmit(**base)
+  base["signature"] = compute_score_signature(settings.score_signature_key, model)
+  return base

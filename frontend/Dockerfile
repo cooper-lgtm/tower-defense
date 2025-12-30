@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG VITE_SCORE_SIGNING_KEY
+ENV VITE_SCORE_SIGNING_KEY=${VITE_SCORE_SIGNING_KEY}
 RUN npm run build
 
 FROM nginx:1.27-alpine

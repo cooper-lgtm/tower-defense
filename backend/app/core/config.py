@@ -11,6 +11,8 @@ class Settings(BaseSettings):
   secret_key: str = "dev-secret"
   access_token_expire_minutes: int = 60 * 24
   algorithm: str = "HS256"
+  score_signature_key: str = "dev-signing-key"
+  score_signature_window_seconds: int = 120
 
   database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/tower_defense"
   redis_url: str = "redis://localhost:6379/0"

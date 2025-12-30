@@ -1,4 +1,5 @@
 from datetime import timedelta
+import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import get_settings
 from ..core.db import get_db
-from ..core.deps import get_leaderboard
+from ..core.deps import get_leaderboard, get_nonce_store
 from ..models import Score, User, Level
 from ..schemas import (
   BestScoreResponse,
@@ -24,7 +25,13 @@ from ..schemas import (
 )
 from ..services.levels import load_level
 from ..services.leaderboard import Leaderboard
-from ..utils.security import create_access_token, get_password_hash, verify_password
+from ..utils.nonce import NonceStore
+from ..utils.security import (
+  create_access_token,
+  get_password_hash,
+  verify_password,
+  verify_score_signature,
+)
 
 settings = get_settings()
 router = APIRouter()
@@ -136,10 +143,26 @@ def submit_score(
   db: Session = Depends(get_db),
   user: User = Depends(get_current_user),
   leaderboard: Leaderboard = Depends(get_leaderboard),
+  nonce_store: NonceStore = Depends(get_nonce_store),
 ) -> ScoreOut:
   """提交成绩：校验版本/hash，存库并更新榜单。"""
   if user.name == "guest":
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest scores are not ranked")
+
+  # 时间戳窗口校验（默认 120s）
+  now = int(time.time())
+  window = settings.score_signature_window_seconds
+  if abs(now - payload.timestamp) > window:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Timestamp out of window")
+
+  # nonce 防重放
+  if not nonce_store.check_and_store(payload.nonce, ttl_seconds=window):
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Duplicate nonce")
+
+  # 签名校验
+  if not verify_score_signature(settings.score_signature_key, payload):
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature")
+
   level = load_level(payload.level_id)
   if payload.level_hash != level["hash"]:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Level hash mismatch")

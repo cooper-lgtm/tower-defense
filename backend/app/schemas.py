@@ -53,6 +53,8 @@ class ScoreSubmit(BaseModel):
   level_id: str
   level_version: str
   level_hash: str
+  timestamp: int
+  nonce: str
   signature: Optional[str] = None
   ops_digest: Optional[str] = None
 
