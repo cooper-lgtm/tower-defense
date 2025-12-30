@@ -10,6 +10,14 @@ pip install -e .
 uvicorn app.main:app --reload
 ```
 
+## Testing
+
+```bash
+cd backend
+pip install -e '.[dev]'    # 安装 pytest/ruff/black 等开发依赖
+pytest -q                  # 运行后端单元测试
+```
+
 Environment variables (see `app/core/config.py`, prefix `TD_`):
 - `TD_DATABASE_URL` (Postgres, default `postgresql+psycopg2://postgres:postgres@localhost:5432/tower_defense`)
 - `TD_REDIS_URL` (default `redis://localhost:6379/0`)
