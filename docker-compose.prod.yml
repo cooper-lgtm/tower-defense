@@ -5,6 +5,9 @@ services:
       dockerfile: Dockerfile
     image: tower-defense-backend:latest
     env_file: .env.prod
+    environment:
+      TD_SCORE_SIGNATURE_KEY: ${TD_SCORE_SIGNATURE_KEY:-dev-signing-key}
+      TD_SCORE_SIGNATURE_WINDOW_SECONDS: ${TD_SCORE_SIGNATURE_WINDOW_SECONDS:-120}
     depends_on:
       db:
         condition: service_healthy
@@ -21,6 +24,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_SCORE_SIGNING_KEY: ${VITE_SCORE_SIGNING_KEY:-dev-signing-key}
     image: tower-defense-frontend:latest
     ports:
       - "16123:80"
