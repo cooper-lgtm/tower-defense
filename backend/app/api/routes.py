@@ -87,7 +87,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
   return user
 
 
-@router.post("/auth/login", response_model=Token)
+@router.post("/auth/login", response_model=Token, name="auth_login")
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
   """登录，返回 JWT。游客不计入榜单。"""
   name = payload.name or "guest"
@@ -98,7 +98,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
   return Token(access_token=token, expires_in=int(access_token_expires.total_seconds()))
 
 
-@router.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED, name="auth_register")
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserOut:
   """注册新用户：名称唯一，需密码。"""
   if payload.name == "guest":
@@ -111,14 +111,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserOut
   return UserOut.model_validate(user)
 
 
-@router.get("/levels/{level_id}", response_model=LevelResponse)
+@router.get("/levels/{level_id}", response_model=LevelResponse, name="get_level")
 def get_level(level_id: str) -> LevelResponse:
   """获取关卡配置（附带版本/hash）。"""
   level = load_level(level_id)
   return LevelResponse(id=level["id"], version=level["version"], hash=level["hash"], config=level["config"])
 
 
-@router.get("/leaderboard", response_model=LeaderboardResponse)
+@router.get("/leaderboard", response_model=LeaderboardResponse, name="read_leaderboard")
 def read_leaderboard(
   level: str = Query("endless"),
   scope: str = Query("all"),
@@ -130,7 +130,7 @@ def read_leaderboard(
   return LeaderboardResponse(level=level, scope=scope, entries=entries)
 
 
-@router.post("/score", response_model=ScoreOut)
+@router.post("/score", response_model=ScoreOut, name="submit_score")
 def submit_score(
   payload: ScoreSubmit,
   db: Session = Depends(get_db),
@@ -186,7 +186,7 @@ def submit_score(
   return ScoreOut.model_validate(score)
 
 
-@router.get("/score/best", response_model=BestScoreResponse)
+@router.get("/score/best", response_model=BestScoreResponse, name="best_score")
 def best_score(
   level: str = Query("endless"),
   db: Session = Depends(get_db),
