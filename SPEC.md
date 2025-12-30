@@ -52,7 +52,8 @@
   - 客户端请求关卡时返回完整配置 + `version` + `hash`，用于后续提交校验。客户端每次想开一局时，先 GET /api/levels/{id} 拿最新的配置 + version + hash，用它来驱动本局游戏。上传成绩时客户端要把刚才拿到的 version/hash原样带回，服务端会再算一遍当前关卡的 hash 做对比，只有匹配才入库。
 - 成绩上传
   - 仅登录用户（非 guest）可上传。
-  - 提交体需携带：`level_id`、`level_version`、`level_hash`、`score`、`wave`、`time_ms`、`life_left`。
+  - 提交体需携带：`level_id`、`level_version`、`level_hash`、`score`、`wave`、`time_ms`、`life_left`、`timestamp`、`nonce`、`signature`（。
+  - 成绩签名：客户端将上述字段按顺序 `level_id|level_version|level_hash|score|wave|time_ms|life_left|timestamp|nonce|ops_digest` 做 HMAC-SHA256，附带 `timestamp`（秒级）与一次性 `nonce`；服务端验证签名、2 分钟时间窗口、nonce 去重，防篡改与重放。
   - 服务端依据当前关卡文件校验 `level_version`、`level_hash` 一致后才入库。
   - 同步更新榜单：同一用户仅保留该关卡的最高分，分数相同时取耗时更短的记录。
 - 榜单
@@ -60,7 +61,7 @@
   - 提供 HTTP 查询与 WebSocket 定期推送两种访问方式。
 
 ## 边界条件与取舍
-- 客户端不可信：服务端只校验版本/hash，未做运行时反作弊（如操作轨迹校验），因而仍可伪造高分；通过“只保留最高分”“时间更短优先”弱化重复提交影响。
+- 客户端不可信：已增加签名 + 时间窗 + nonce 抗重放，仍未做操作轨迹校验，高级作弊仍可能；通过“只保留最高分”“时间更短优先”弱化重复提交影响。
 - 数据一致性：成绩与榜单更新在同一请求内完成，Redis 不可用时回退内存榜单（进程级，非持久化）。
 - 性能/开发取舍：使用同步 SQLAlchemy Session + FastAPI 依赖注入，便于测试和覆盖率；榜单以 Redis ZSET 实现，满足小规模实时需求。
 - 注册简单化：未强制邮箱/验证码，便于快速体验；密码仅做 bcrypt 哈希。
