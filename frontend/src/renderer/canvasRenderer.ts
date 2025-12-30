@@ -157,38 +157,56 @@ export class CanvasRenderer {
   }
 
   private drawProjectile(tower: Tower) {
-    if (!tower.data.lastShot || tower.data.shotTimer <= 0 || !tower.data.lastShotStart) return
+    if (tower.data.shotTimer <= 0) return
+    const shots =
+      tower.data.lastShots && tower.data.lastShots.length > 0
+        ? tower.data.lastShots
+        : tower.data.lastShot && tower.data.lastShotStart
+          ? [{ start: tower.data.lastShotStart, end: tower.data.lastShot }]
+          : []
+    if (shots.length === 0) return
     const { ctx } = this
     const t = tower.data.shotTimer
     const isLaser = tower.data.type === 'LASER'
     const duration = tower.data.shotDuration || (isLaser ? 0.3 : 0.12)
     const alpha = isLaser ? 0.8 : Math.min(1, t / duration)
-    const start = tower.data.lastShotStart
-    const end = tower.data.lastShot
     const progress = 1 - t / duration
 
     ctx.save()
     if (isLaser) {
-      ctx.strokeStyle = `rgba(244,63,94,${0.55 * alpha})`
-      ctx.lineWidth = 2.6
-      ctx.beginPath()
-      ctx.moveTo(start.x, start.y)
-      ctx.lineTo(end.x, end.y)
-      ctx.stroke()
-      ctx.strokeStyle = `rgba(168,85,247,${0.35 * alpha})`
-      ctx.lineWidth = 4
-      ctx.stroke()
+      for (const shot of shots) {
+        ctx.strokeStyle = `rgba(244,63,94,${0.55 * alpha})`
+        ctx.lineWidth = 2.6
+        ctx.beginPath()
+        ctx.moveTo(shot.start.x, shot.start.y)
+        ctx.lineTo(shot.end.x, shot.end.y)
+        ctx.stroke()
+        ctx.strokeStyle = `rgba(168,85,247,${0.35 * alpha})`
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(shot.start.x, shot.start.y)
+        ctx.lineTo(shot.end.x, shot.end.y)
+        ctx.stroke()
+      }
     } else {
       const color =
-        tower.data.type === 'CANNON' ? '#1d4ed8' : tower.data.type === 'HMG' ? '#ea580c' : '#22c55e'
-      // 子弹当前位置插值
-      const bx = start.x + (end.x - start.x) * progress
-      const by = start.y + (end.y - start.y) * progress
-      ctx.fillStyle = color
-      const radius = tower.data.type === 'CANNON' ? 4 : tower.data.type === 'HMG' ? 3 : 2.4
-      ctx.beginPath()
-      ctx.arc(bx, by, radius, 0, Math.PI * 2)
-      ctx.fill()
+        tower.data.type === 'CANNON'
+          ? '#1d4ed8'
+          : tower.data.type === 'HMG'
+            ? '#ea580c'
+            : tower.data.type === 'FREEZE'
+              ? '#38bdf8'
+              : '#22c55e'
+      const radius = tower.data.type === 'CANNON' ? 4 : tower.data.type === 'HMG' ? 3 : tower.data.type === 'FREEZE' ? 3 : 2.4
+      for (const shot of shots) {
+        // 子弹当前位置插值
+        const bx = shot.start.x + (shot.end.x - shot.start.x) * progress
+        const by = shot.start.y + (shot.end.y - shot.start.y) * progress
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.arc(bx, by, radius, 0, Math.PI * 2)
+        ctx.fill()
+      }
     }
     ctx.restore()
   }
@@ -246,6 +264,19 @@ export class CanvasRenderer {
         ctx.fill()
         ctx.fillStyle = '#f43f5e'
         ctx.fillRect(radius * 0.2, -radius * 0.2, radius * 0.9, radius * 0.4)
+        break
+      }
+      case 'FREEZE': {
+        ctx.fillStyle = '#0ea5e9'
+        ctx.beginPath()
+        ctx.rect(-radius * 0.65, -radius * 0.65, radius * 1.1, radius * 1.1)
+        ctx.fill()
+        ctx.fillStyle = '#67e8f9'
+        ctx.beginPath()
+        ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#38bdf8'
+        ctx.fillRect(radius * 0.25, -radius * 0.22, radius * 0.85, radius * 0.44)
         break
       }
       case 'WALL': {

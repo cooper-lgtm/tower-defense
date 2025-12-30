@@ -10,13 +10,14 @@ interface OverlayOptions {
 
 const towerMeta: Record<TowerType, { label: string; desc: string }> = {
   CANNON: { label: '加农炮', desc: '中程溅射' },
+  FREEZE: { label: '冷冻炮', desc: '命中减速50%' },
   LMG: { label: '轻机枪', desc: '远程速射' },
   HMG: { label: '重机枪', desc: '近中高伤' },
-  LASER: { label: '激光炮', desc: '中远瞬时' },
+  LASER: { label: '激光炮', desc: '中远瞬时多目标' },
   WALL: { label: '路障', desc: '阻挡' },
 }
 
-const towerOrder: TowerType[] = ['CANNON', 'LMG', 'HMG', 'LASER', 'WALL']
+const towerOrder: TowerType[] = ['CANNON', 'FREEZE', 'LMG', 'HMG', 'LASER', 'WALL']
 
 export class OverlayUI {
   private root: HTMLDivElement

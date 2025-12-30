@@ -1,7 +1,7 @@
 export type GameState = 'menu' | 'building' | 'running' | 'paused' | 'gameover'
 
 export type EnemyType = 'NORMAL' | 'FAST' | 'TANK' | 'SHIELD' | 'BRUISER' | 'BOSS'
-export type TowerType = 'CANNON' | 'LMG' | 'HMG' | 'LASER' | 'WALL'
+export type TowerType = 'CANNON' | 'LMG' | 'HMG' | 'LASER' | 'FREEZE' | 'WALL'
 
 export interface Cell {
   x: number
@@ -17,6 +17,10 @@ export interface TowerDefinition {
   costByLevel: number[]
   splashRadius?: number
   pierce?: number
+  slow?: {
+    multiplier: number
+    duration: number
+  }
 }
 
 export interface EnemyDefinition {
@@ -108,6 +112,7 @@ export interface TowerInstance {
   shotTimer: number
   lastShot?: { x: number; y: number }
   lastShotStart?: { x: number; y: number }
+  lastShots?: { start: { x: number; y: number }; end: { x: number; y: number } }[]
   shotDuration?: number
   lastTargetId?: number
 }
@@ -126,6 +131,8 @@ export interface EnemyInstance {
   path: Cell[]
   alive: boolean
   escaped: boolean
+  speedMultiplier?: number
+  slowRemaining?: number
 }
 
 export interface LeaderboardEntry {

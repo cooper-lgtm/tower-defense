@@ -1,7 +1,7 @@
 {
   "metadata": {
     "id": "endless",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "hash": ""
   },
   "grid": {
@@ -62,6 +62,15 @@
       "costByLevel": [20, 32, 48, 70, 96],
       "pierce": 2
     },
+    "FREEZE": {
+      "name": "Freeze",
+      "type": "FREEZE",
+      "baseDamage": 8,
+      "fireRate": 1,
+      "range": 4,
+      "costByLevel": [14, 22, 32, 48, 66],
+      "slow": { "multiplier": 0.5, "duration": 2.5 }
+    },
     "WALL": {
       "name": "Wall",
       "type": "WALL",
@@ -77,7 +86,7 @@
       "type": "NORMAL",
       "baseHp": 35,
       "baseArmor": 2,
-      "baseSpeed": 1.2,
+      "baseSpeed": 0.95,
       "baseDamage": 1,
       "reward": 2,
       "color": "#5bb0ff"
@@ -87,7 +96,7 @@
       "type": "FAST",
       "baseHp": 24,
       "baseArmor": 1,
-      "baseSpeed": 2.1,
+      "baseSpeed": 1.6,
       "baseDamage": 1,
       "reward": 2,
       "color": "#8de26d"
@@ -97,7 +106,7 @@
       "type": "TANK",
       "baseHp": 90,
       "baseArmor": 6,
-      "baseSpeed": 0.9,
+      "baseSpeed": 0.75,
       "baseDamage": 2,
       "reward": 4,
       "color": "#d6a05f"
@@ -107,7 +116,7 @@
       "type": "SHIELD",
       "baseHp": 55,
       "baseArmor": 10,
-      "baseSpeed": 1,
+      "baseSpeed": 0.8,
       "baseDamage": 1,
       "reward": 3,
       "color": "#7a6bff"
@@ -117,7 +126,7 @@
       "type": "BRUISER",
       "baseHp": 110,
       "baseArmor": 8,
-      "baseSpeed": 1.1,
+      "baseSpeed": 0.9,
       "baseDamage": 3,
       "reward": 6,
       "color": "#ff7b6f"
@@ -127,7 +136,7 @@
       "type": "BOSS",
       "baseHp": 400,
       "baseArmor": 12,
-      "baseSpeed": 0.85,
+      "baseSpeed": 0.72,
       "baseDamage": 5,
       "reward": 30,
       "color": "#ff3b30"

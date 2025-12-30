@@ -11,6 +11,8 @@ export class Enemy {
   private map: GridMap
   private worldPath: { x: number; y: number }[]
   private pathIndex = 0
+  private slowTimer = 0
+  private slowMultiplier = 1
 
   constructor(def: EnemyDefinition, path: Cell[], difficulty: number, map: GridMap) {
     const variance = jitter(0.8, 1.2)
@@ -31,13 +33,24 @@ export class Enemy {
       path,
       alive: true,
       escaped: false,
+      speedMultiplier: 1,
     }
   }
 
   update(dt: number): { escaped: boolean } {
     if (!this.data.alive || this.data.escaped) return { escaped: false }
 
-    const speed = this.data.speed * this.map.cellSize
+    if (this.slowTimer > 0) {
+      this.slowTimer = Math.max(0, this.slowTimer - dt)
+      if (this.slowTimer === 0) {
+        this.slowMultiplier = 1
+      }
+    }
+
+    this.data.speedMultiplier = this.slowMultiplier
+    this.data.slowRemaining = this.slowTimer > 0 ? this.slowTimer : undefined
+
+    const speed = this.data.speed * this.slowMultiplier * this.map.cellSize
     let remaining = dt * speed
 
     while (remaining > 0 && this.pathIndex < this.worldPath.length - 1) {
@@ -106,5 +119,18 @@ export class Enemy {
     this.worldPath = path.map((cell) => this.map.worldFromCell(cell))
     this.pathIndex = 0
     this.data.progress = 0
+  }
+
+  applySlow(multiplier: number, duration: number): void {
+    const clamped = Math.min(1, Math.max(0.1, multiplier))
+    // 取更强的减速或刷新持续时间
+    if (clamped < this.slowMultiplier || this.slowTimer <= 0) {
+      this.slowMultiplier = clamped
+      this.slowTimer = duration
+    } else if (clamped === this.slowMultiplier && duration > this.slowTimer) {
+      this.slowTimer = duration
+    }
+    this.data.speedMultiplier = this.slowMultiplier
+    this.data.slowRemaining = this.slowTimer
   }
 }
