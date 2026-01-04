@@ -262,6 +262,18 @@ export class OverlayUI {
     if (isGuest) this.setBestScore(null)
   }
 
+  updateTowerDefs(towerDefs: Record<TowerType, TowerDefinition>) {
+    this.towerDefs = towerDefs
+    towerOrder.forEach((type) => {
+      const btn = this.towerButtons.get(type)
+      if (!btn) return
+      const cost = towerDefs[type]?.costByLevel?.[0]
+      const priceText = cost != null ? `${cost} 金币` : '—'
+      const priceEl = btn.querySelector('.tower-price')
+      if (priceEl) priceEl.textContent = priceText
+    })
+  }
+
   setBestScore(score: number | null) {
     this.bestDisplay.textContent = score == null ? '—' : `${score}`
   }

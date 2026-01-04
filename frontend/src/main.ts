@@ -46,7 +46,7 @@ const uiContainer = document.createElement('div')
 app.appendChild(uiContainer)
 
 let game: Game | null = null
-let levelConfig: LevelConfig | null = null
+let levelConfig: LevelConfig | null = createDefaultLevel()
 let overlay: OverlayUI | null = null
 let startButton: HTMLButtonElement
 let currentUser: { name: string; isGuest: boolean } = { name: 'guest', isGuest: true }
@@ -59,6 +59,7 @@ let latestSelection:
       sellRefund: number
     }
   | null = null
+let isLevelLoading = false
 
 function hideTowerMenu() {
   towerMenu.style.display = 'none'
@@ -84,12 +85,23 @@ function showTowerMenu(info: {
   sellBtn.textContent = `出售 (+${info.sellRefund})`
 }
 
-async function loadLevel(): Promise<LevelConfig> {
+async function fetchLatestLevel(): Promise<LevelConfig> {
   try {
     return await fetchLevel('endless')
-  } catch {
+  } catch (err) {
+    console.error('获取关卡失败，回退到内置默认配置', err)
     return createDefaultLevel()
   }
+}
+
+function setInitialStats(config: LevelConfig) {
+  overlay?.setStats({
+    life: config.grid.initialLife,
+    state: 'menu',
+    score: 0,
+    gold: Math.round(config.grid.initialGold),
+    wave: 1,
+  })
 }
 
 function createGameInstance() {
@@ -128,6 +140,25 @@ function createGameInstance() {
   game.start()
   latestStats = game.getStats()
   overlay!.setStats(latestStats)
+}
+
+async function startNewRun() {
+  if (isLevelLoading) return
+  isLevelLoading = true
+  if (startButton) startButton.disabled = true
+  try {
+    const latestLevel = await fetchLatestLevel()
+    levelConfig = latestLevel
+    overlay?.updateTowerDefs(latestLevel.towers)
+    setInitialStats(latestLevel)
+    createGameInstance()
+    if (startButton) startButton.style.display = 'none'
+  } catch (err) {
+    console.error('开局加载关卡失败', err)
+  } finally {
+    if (startButton) startButton.disabled = false
+    isLevelLoading = false
+  }
 }
 
 async function handleGameOver(summary: { score: number; wave: number; timeMs: number; lifeLeft: number }) {
@@ -170,7 +201,7 @@ async function refreshBestScore() {
 }
 
 async function bootstrap() {
-  levelConfig = await loadLevel()
+  if (!levelConfig) levelConfig = createDefaultLevel()
 
   overlay = new OverlayUI({
     towerDefs: levelConfig.towers,
@@ -189,7 +220,7 @@ async function bootstrap() {
       overlay?.setStats({ ...latestStats, state: game.getStats().state })
     },
     onRestart: () => {
-      createGameInstance()
+      startNewRun().catch((err) => console.error(err))
     },
   })
   overlay.mount(uiContainer, leftColumn)
@@ -201,13 +232,7 @@ async function bootstrap() {
   } catch (err) {
     console.error('Leaderboard fetch failed', err)
   }
-  overlay.setStats({
-    life: levelConfig.grid.initialLife,
-    state: 'menu',
-    score: 0,
-    gold: Math.round(levelConfig.grid.initialGold),
-    wave: 1,
-  })
+  setInitialStats(levelConfig)
   overlay.setBestScore(null)
 
   // Auth modal
@@ -230,12 +255,7 @@ async function bootstrap() {
   startButton.style.display = 'none'
   startButton.textContent = '开始游戏'
   startButton.onclick = () => {
-    startButton.style.display = 'none'
-    if (!levelConfig) {
-      console.error('Level not loaded')
-      return
-    }
-    createGameInstance()
+    startNewRun().catch((err) => console.error(err))
   }
   document.body.appendChild(startButton)
 }
